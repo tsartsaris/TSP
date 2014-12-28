@@ -1,32 +1,25 @@
-__author__ = 'sotiris'
-#! /usr/bin/env python
+# ! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-"""
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
+__author__ = "Tsartsaris Sotiris"
+__copyright__ = "Copyright 2014, The TSP Project"
+__credits__ = ["Tsartsaris Sotiris"]
+__license__ = "APACHE 2.0"
+__version__ = "1.0.1"
+__maintainer__ = "Tsartsaris Sotiris"
+__email__ = "info@tsartsaris.gr"
+__status__ = "Development"
 
 from Tkinter import *
-import Tkinter, Tkconstants, tkFileDialog
+import tkFileDialog
 import ttk
-from parser import *
 
 root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
-def openFile():
+
+
+def openfile():
     filename = tkFileDialog.askopenfilename()
     produce_final(filename)
 
