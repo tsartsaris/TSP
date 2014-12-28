@@ -14,6 +14,9 @@ from Tkinter import *
 import tkFileDialog
 import ttk
 
+from parser import *
+
+
 root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
