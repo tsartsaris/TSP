@@ -12,7 +12,7 @@ __status__ = "Development"
 
 """
     Provided a dictionary with city coordinates and a list
-    of the current tour it calculates the entire tour distance
+    of the current tour it calculates the entire tour euclidean_distance
 """
 
 import math
@@ -27,12 +27,19 @@ class TSPDistance:
             self.cities_best.append(self.citydict.get(i))
         self.distance_cost = self.total_distance(self.cities_best)
 
-    def distance(self, p0, p1):
+    def euclidean_distance(self, p0, p1):
+        """
+            Calculates the Euclidean distance between 2 points (x1,y1) and (x2,y2)
+        """
         xdiff = float(p1[0]) - float(p0[0])
         ydiff = float(p1[1]) - float(p0[1])
-        return int(math.sqrt((xdiff * xdiff + ydiff * ydiff) + 0.5))
+        return int(math.sqrt((xdiff * xdiff + ydiff * ydiff)))
 
     def total_distance(self, cities_best):
+        """
+            Iterates a list of coordinate tuples and calculates the Euclidean
+            distance between 2 points found sequential in the list representing
+            the tour. Then sums everything up and returns the result
+        """
         cities_best = self.cities_best
-        # print cities_tups
-        return sum(self.distance(v, w) for v, w in zip(cities_best[:-1], cities_best[1:]))
+        return sum(self.euclidean_distance(v, w) for v, w in zip(cities_best[:-1], cities_best[1:]))

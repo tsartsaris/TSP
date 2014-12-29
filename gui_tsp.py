@@ -18,7 +18,9 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from tsp_distance import *
 from tsp_parser import *
+
 
 matplotlib.use('TkAgg')
 
@@ -27,11 +29,10 @@ root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
 
-
 def openfile():
     filename = tkFileDialog.askopenfilename()
     newtsp = TSPParser(filename)
-
+    print newtsp.city_coords
     f = Figure(figsize=(8, 6), dpi=100)
     a = f.add_subplot(111)
 
@@ -46,34 +47,21 @@ def openfile():
     canvas = FigureCanvasTkAgg(f, master=root)
     canvas.show()
     canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
-# entry_1 = Entry(root)
-# entry_2 = Entry(root)
 
-# entry_1.grid(row = 0, column = 0)
-# entry_2.grid(row = 1, column = 1)
+    current_tour_distance = TSPDistance(newtsp.city_tour_init, newtsp.city_coords)
+    text_distance.config(state=NORMAL)
+    text_distance.delete('1.0', '2.0')
+    text_distance.insert('1.0', current_tour_distance.distance_cost)
+    text_distance.config(state=DISABLED)
 
-# def printName(event):
-#     print "Hello Sam"
 
-# topFrame = Frame(root)
-# topFrame.pack()
-# bottomFrame = Frame(root)
-# bottomFrame.pack(side = BOTTOM)
-# theLabel = ttk.Label(root, text = 'test again test')
-# theLabel.grid(row = 0, column = 1, sticky = W)
-# c = Checkbutton(root, text = "keep me in man")
-# c.grid(columnspan = 2)
 
 button1 = ttk.Button(root, text='Open TSP file', padding=5, command=openfile)
-# button1.bind("<Button-1>", printName)
-# button2 = ttk.Button(topFrame, text = 'test')
-# button3 = Button(root, text = 'test')
-# button4 = ttk.Button(bottomFrame, text = 'test')
+label_distance = ttk.Label(root, text="Current distance:", background='lightgreen', font=('times', 12, 'bold'))
+label_distance.grid(row=0, column=2, sticky=(W, N, S, E))
 
+text_distance = Text(root, width=10, height=1, bg='lightgreen', fg="red", font=('times', 12, 'bold'))
 button1.grid(row=0, column=1, sticky=W)
-# button2.pack(side = LEFT)
-# button3.pack(fill = X)
-# button4.pack(side = LEFT)
-
+text_distance.grid(row=0, column=3, sticky=(W, N, S, E))
 
 root.mainloop()
