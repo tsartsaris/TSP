@@ -24,6 +24,7 @@ class TSPParser:
         self.city_tour_init = []
         self.city_tour_tuples = []
         self.filename = filename
+        self.display_status = ''
         if self.check_filename(filename):
             content = self.read_filename(filename)
             self.dimension = self.get_dimension(content)
@@ -34,9 +35,11 @@ class TSPParser:
                 self.city_tour_tuples = self.create_initial_coord_tuples()
 
             else:
-                quit()
+                self.display_status = ('Dimension of the file do not match with the name of the file!\n'
+                                       'Please make sure you have a valid TSP data file.\n'
+                                       'Please use another file or correct the one you have')
         else:
-            quit()
+            self.display_status = 'This is not a valid TSP file, should look like example.tsp.Please use another one!'
 
     def check_filename(self, filename):
         """
@@ -46,7 +49,6 @@ class TSPParser:
         if self.filename.endswith(".tsp"):
             return True
         else:
-            print "This is not a valid TSP file"
             return False
 
 
@@ -79,8 +81,6 @@ class TSPParser:
         if self.dimension in self.filename:
             return True
         else:
-            print """Dimension of the file do not match with the name of the file!
-            Please make sure you have a valid TSP data file. Exiting"""
             return False
 
     def get_edge_weight_type(self, content):
@@ -114,7 +114,6 @@ class TSPParser:
 
     def create_initial_coord_tuples(self):
         city_tour_init = self.city_tour_init
-        print city_tour_init
         content = self.city_coords
         for i in city_tour_init:
             self.city_tour_tuples.append(content.get(i))
@@ -122,4 +121,4 @@ class TSPParser:
 
 
 if __name__ == '__main__':
-    newtsp = TSPParser("TSP_Problems/berlin52.tsp")
+    newtsp = TSPParser("TSP_Problems/a280.tsp")

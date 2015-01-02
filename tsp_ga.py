@@ -25,6 +25,7 @@ import random
 class TSPGeneticAlgo:
     def __init__(self, initial_population):
         self.all_fitness = []
+        self.groups_of_two = []
         self.total_best = 10000000000000000000000000000000000
         self.initial_population = initial_population
         self.current_best = self.current_best_score(self.initial_population)
@@ -36,7 +37,8 @@ class TSPGeneticAlgo:
         self.roulette_wheel_selection(self.accumulated_list)
         for i in range(50):
             self.selected_population.append(self.roulette_wheel_selection(self.accumulated_list))
-        print self.selected_population
+        self.random_pick_doubles(self.selected_population)
+        self.crossover_genetic_operator(self.groups_of_two)
 
     def fitness_function(self, city_cost):
         """
@@ -55,7 +57,7 @@ class TSPGeneticAlgo:
 
     def calculate_fitness(self, in_list):
         """
-            Given a in_list of distances we apply the fitness function to each
+            Given a list of distances we apply the fitness function to each
             one of them
         """
         for city_distance in in_list:
@@ -79,7 +81,7 @@ class TSPGeneticAlgo:
     def roulette_wheel_selection(accumulated_list):
         """
             iterating a range we get each time a random number from 0 to 1
-            the we iterate the sorted list of accumulated fitness values and we get
+            theν we iterate the sorted list of accumulated fitness values and we get
              the first higher from that number removing it from the list
         """
         random_number = random.random()
@@ -88,4 +90,16 @@ class TSPGeneticAlgo:
                 accumulated_list.remove(element)
                 return element
 
+    def random_pick_doubles(self, in_list):
+        """
+            We iterate the selected population and we create groups of 2
+            to make the breeding in the next step.
+        """
+        while in_list:
+            local = random.sample(in_list, 2)
+            for i in local:
+                in_list.remove(i)
+            self.groups_of_two.append(local)
 
+    def crossover_genetic_operator(self, in_list):
+        print len(in_list)

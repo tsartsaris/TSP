@@ -41,7 +41,6 @@ class TSPInitialPopulation:
                 city = self.pick_random_city()
                 nn_tour = self.create_nearest_tour(city, prov_list)
                 self.pop_group.append(nn_tour)
-            print self.pop_group
 
 
     def shuffle_list(self, tour_list, pop_size):
@@ -95,7 +94,3 @@ class TSPInitialPopulation:
             nearest_tour.append(next_city[1])
             prov_list.remove(next_city[1])
         return nearest_tour
-
-
-
-
