@@ -20,6 +20,7 @@ __status__ = "Development"
 from operator import itemgetter
 import numpy as np
 import random
+import collections
 
 
 class TSPGeneticAlgo:
@@ -128,3 +129,7 @@ class TSPGeneticAlgo:
         for dirty in in_list:
             differs = [x for x in self.city_tour_init if x not in dirty]
             print differs
+            uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
+            print uniq
+            for unique in uniq:
+                print dirty.index(unique)
