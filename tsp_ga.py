@@ -130,6 +130,9 @@ class TSPGeneticAlgo:
             differs = [x for x in self.city_tour_init if x not in dirty]
             print differs
             uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
-            print uniq
             for unique in uniq:
-                print dirty.index(unique)
+                index = dirty.index(unique)
+                dirty.pop(index)
+                dirty.insert(index, differs[-1])
+                differs.pop()
+            print dirty
