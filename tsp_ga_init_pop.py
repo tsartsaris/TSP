@@ -53,7 +53,7 @@ class TSPInitialPopulation:
         for i in range(pop_size):
             y = np.random.permutation(x)
             if not any((y == x).all() for x in self.pop_group):
-                self.pop_group.append(y)
+                self.pop_group.append(y.tolist())
 
     def find_nn(self, city, list):
         """

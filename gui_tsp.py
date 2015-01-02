@@ -105,7 +105,7 @@ def openfile(frame1=None):
     update_visual_current_distance(shortest_path_cost)
     plot_tour(shortest_path_tuples)
 
-    tsp_ga_solve = TSPGeneticAlgo(temp)
+    tsp_ga_solve = TSPGeneticAlgo(temp, newtsp.city_tour_init)
 
 
 def create_init_pop(init_dict, init_tour):

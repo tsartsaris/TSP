@@ -23,7 +23,10 @@ import random
 
 
 class TSPGeneticAlgo:
-    def __init__(self, initial_population):
+    def __init__(self, initial_population, city_tour_init):
+        self.city_tour_init = city_tour_init  # pass the initial tour here for differences between children after crossover duplicates
+        print self.city_tour_init
+        self.children_dirty = []
         self.all_fitness = []
         self.groups_of_two = []
         self.total_best = 10000000000000000000000000000000000
@@ -38,7 +41,8 @@ class TSPGeneticAlgo:
         for i in range(50):
             self.selected_population.append(self.roulette_wheel_selection(self.accumulated_list))
         self.random_pick_doubles(self.selected_population)
-        self.crossover_genetic_operator(self.groups_of_two)
+        self.children_dirty = self.crossover_genetic_operator(self.groups_of_two)
+        self.remove_duplicate_cities(self.children_dirty)
 
     def fitness_function(self, city_cost):
         """
@@ -102,4 +106,25 @@ class TSPGeneticAlgo:
             self.groups_of_two.append(local)
 
     def crossover_genetic_operator(self, in_list):
-        print len(in_list)
+        local_doubles = []
+        local_children = []
+        for double in in_list:
+            if double[0][1][0]:
+                local_doubles.append(double[0][1][0])
+            if double[1][1][0]:
+                local_doubles.append(double[1][1][0])
+        local_doubles = map(None, *[iter(local_doubles)] * 2)
+        for pair in local_doubles:
+            ind1 = pair[0]
+            ind2 = pair[1]
+            size = min(len(ind1), len(ind2))
+            cxpoint = random.randint(1, size - 1)
+            ind1[cxpoint:], ind2[cxpoint:] = ind2[cxpoint:], ind1[cxpoint:]
+            local_children.append(ind1)
+            local_children.append(ind2)
+        return local_children
+
+    def remove_duplicate_cities(self, in_list):
+        for dirty in in_list:
+            differs = [x for x in self.city_tour_init if x not in dirty]
+            print differs
