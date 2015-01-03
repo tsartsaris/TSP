@@ -49,7 +49,6 @@ def init_plot():
 
 init_plot()
 
-
 def openfile(frame1=None):
     filename = tkFileDialog.askopenfilename()
     newtsp = TSPParser(filename)
@@ -84,37 +83,49 @@ def openfile(frame1=None):
     init_tour = newtsp.city_tour_init
     current_tour_distance = TSPDistance(newtsp.city_tour_init, newtsp.city_coords)
     update_visual_current_distance(current_tour_distance.distance_cost)
+    temp = []
 
-    new_pop = create_init_pop(newtsp.city_coords, init_tour)
-    distances_list = []
-    for elem in new_pop:
-        loc_dist = TSPDistance(elem, newtsp.city_coords)
+    def button_action(type):
+        offspring_distances = []
+        new_pop = create_init_pop(newtsp.city_coords, init_tour, type)
+        distances_list = []
+        for elem in new_pop:
+            loc_dist = TSPDistance(elem, newtsp.city_coords)
 
-        distances_list.append((loc_dist.distance_cost, [loc_dist.tourlist]))
-    temp = map(sorted, distances_list)
-    shortest_path = []
-    shortest_path_cost = min(i[0] for i in temp)
-    for i in temp:
-        if i[0] == shortest_path_cost:
-            shortest_path = (i[1][0])
+            distances_list.append((loc_dist.distance_cost, loc_dist.tourlist))
+        global temp
+        temp = map(sorted, distances_list)
+        shortest_path = []
+        shortest_path_cost = min(i[0] for i in temp)
+        for i in temp:
+            if i[0] == shortest_path_cost:
+                shortest_path = (i[1])
+        shortest_path_tuples = []
+        for city in shortest_path:
+            shortest_path_tuples.append(newtsp.city_coords.get(city))
 
-    shortest_path_tuples = []
-    for city in shortest_path:
-        shortest_path_tuples.append(newtsp.city_coords.get(city))
-
-    update_visual_current_distance(shortest_path_cost)
-    plot_tour(shortest_path_tuples)
-
-    tsp_ga_solve = TSPGeneticAlgo(temp, newtsp.city_tour_init)
+        update_visual_current_distance(shortest_path_cost)
+        plot_tour(shortest_path_tuples)
+        tsp_ga_solve = TSPGeneticAlgo(temp, newtsp.city_tour_init)
 
 
-def create_init_pop(init_dict, init_tour):
+    var = StringVar(frame)
+    var.set("shuffle")  # initial value
+
+    option1 = OptionMenu(frame, var, "shuffle", "elitism")
+    option1.pack()
+
+    button = Button(frame, text="Create initial population", command=lambda: button_action(var.get()))
+    button.pack()
+
+
+def create_init_pop(init_dict, init_tour, type):
     """
         We create the initial population with TSPInitialPopulation class
         we pass the dict with cities and coordinates and the initial tour
     """
-    new_pop = TSPInitialPopulation(init_dict, init_tour, 100,
-                                   "elitism")  # plus the population initial size (here is 50)
+    new_pop = TSPInitialPopulation(init_dict, init_tour, 50,
+                                   type)  # plus the population initial size (here is 50)
     return new_pop.pop_group
 
 
