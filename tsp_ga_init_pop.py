@@ -13,7 +13,8 @@ __status__ = "Development"
 """
     Provided a list representing a tour we create here
     the initial population for the Genetic Algorithm
-    to start from. Techniques to create are shuffle...
+    to start from. Techniques to create are shuffle and elitism
+    with NN (nearest neighbor) techniques
 """
 
 import numpy as np
@@ -37,10 +38,9 @@ class TSPInitialPopulation:
             half = self.pop_size / 2
             self.shuffle_list(self.tour_list, half)
             for i in range(half + 1):
-                prov_list = self.tour_list[:]
                 city = self.pick_random_city()
-                nn_tour = self.create_nearest_tour(city, prov_list)
-                self.pop_group.append(nn_tour)
+                self.create_nearest_tour(city)
+
 
 
     def shuffle_list(self, tour_list, pop_size):
@@ -84,13 +84,13 @@ class TSPInitialPopulation:
             self.random_cities.append(self.random_city)
         return self.random_city
 
-    def create_nearest_tour(self, city, prov_list):
-        nearest_tour = []
-        nearest_tour.append(city)
+    def create_nearest_tour(self, city):
+        prov_list = self.tour_list[:]
+        nearest_tour = [city]
         if city in prov_list: prov_list.remove(city)
         while prov_list:
             current_city = nearest_tour[-1]
             next_city = self.find_nn(current_city, prov_list)
             nearest_tour.append(next_city[1])
             prov_list.remove(next_city[1])
-        return nearest_tour
+        self.pop_group.append(nearest_tour)
