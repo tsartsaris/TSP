@@ -26,8 +26,8 @@ import collections
 class TSPGeneticAlgo:
     def __init__(self, initial_population, city_tour_init):
         self.city_tour_init = city_tour_init  # pass the initial tour here for differences between children after crossover duplicates
-        print self.city_tour_init
         self.children_dirty = []
+        self.offsprings = []
         self.all_fitness = []
         self.groups_of_two = []
         self.total_best = 10000000000000000000000000000000000
@@ -86,13 +86,13 @@ class TSPGeneticAlgo:
     def roulette_wheel_selection(accumulated_list):
         """
             iterating a range we get each time a random number from 0 to 1
-            theν we iterate the sorted list of accumulated fitness values and we get
-             the first higher from that number removing it from the list
+            then we iterate the sorted list of accumulated fitness values and we get
+             the first higher from that number not removing it from the list
+             allowing each chromosome to be a parent more than once
         """
         random_number = random.random()
         for element in accumulated_list:
             if element[0] > random_number:
-                accumulated_list.remove(element)
                 return element
 
     def random_pick_doubles(self, in_list):
@@ -107,13 +107,17 @@ class TSPGeneticAlgo:
             self.groups_of_two.append(local)
 
     def crossover_genetic_operator(self, in_list):
+        """
+            Takes the pairs of chromosomes in the list and applies a crossover
+            on a random point to create offsprings.
+        """
         local_doubles = []
         local_children = []
         for double in in_list:
-            if double[0][1][0]:
-                local_doubles.append(double[0][1][0])
-            if double[1][1][0]:
-                local_doubles.append(double[1][1][0])
+            if isinstance(double[0][1], (list, tuple)):
+                local_doubles.append(double[0][1])
+            if isinstance(double[1][1], (list, tuple)):
+                local_doubles.append(double[1][1])
         local_doubles = map(None, *[iter(local_doubles)] * 2)
         for pair in local_doubles:
             ind1 = pair[0]
@@ -126,13 +130,17 @@ class TSPGeneticAlgo:
         return local_children
 
     def remove_duplicate_cities(self, in_list):
+        """
+            The offsprings from the crossover contain duplicate cities which must
+            be removed by replacing them with cities that are not in the the child
+        """
         for dirty in in_list:
             differs = [x for x in self.city_tour_init if x not in dirty]
-            print differs
             uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
             for unique in uniq:
                 index = dirty.index(unique)
                 dirty.pop(index)
                 dirty.insert(index, differs[-1])
                 differs.pop()
-            print dirty
+            self.offsprings.append(dirty)
+        print len(self.offsprings)
