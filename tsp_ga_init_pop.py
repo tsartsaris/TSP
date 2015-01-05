@@ -37,7 +37,7 @@ class TSPInitialPopulation:
         elif self.init_type == "elitism":
             half = self.pop_size / 2
             self.shuffle_list(self.tour_list, half)
-            for i in range(half + 1):
+            for i in range(half):
                 city = self.pick_random_city()
                 self.create_nearest_tour(city)
 

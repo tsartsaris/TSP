@@ -21,36 +21,51 @@ from operator import itemgetter
 import numpy as np
 import random
 import collections
+from collections import deque
 
 
 class TSPGeneticAlgo:
-    def __init__(self, initial_population, city_tour_init):
+    def __init__(self, initial_population, city_tour_init, total_best):
         self.city_tour_init = city_tour_init  # pass the initial tour here for differences between children after crossover duplicates
         self.children_dirty = []
         self.offsprings = []
+        self.children = []
         self.all_fitness = []
         self.groups_of_two = []
+        self.population_for_mutation = []
         self.total_best = 10000000000000000000000000000000000
         self.initial_population = initial_population
         self.current_best = self.current_best_score(self.initial_population)
         self.selected_population = []
+        self.total_best = total_best
         if self.current_best < self.total_best:
             self.total_best = self.current_best
         self.calculate_fitness(self.initial_population)
-        self.accumulated_list = self.accumulate_fitness()
-        self.roulette_wheel_selection(self.accumulated_list)
-        for i in range(50):
-            self.selected_population.append(self.roulette_wheel_selection(self.accumulated_list))
+        self.sorted_all_fintess()
+        # self.accumulated_list = self.accumulate_fitness()
+        # for i in range(50):
+        # self.selected_population.append(self.roulette_wheel_selection(self.accumulated_list))
+        self.selected_population = self.select_best_pop(self.sorted_fitness)
         self.random_pick_doubles(self.selected_population)
         self.children_dirty = self.crossover_genetic_operator(self.groups_of_two)
         self.remove_duplicate_cities(self.children_dirty)
+        self.mutate_pop()
 
     def fitness_function(self, city_cost):
         """
             We apply the fitness function to each distance by
             dividing the lowest with each one of them
         """
-        return float(float(self.total_best) / float(city_cost))
+        return round(float(float(self.total_best) / float(city_cost)), 3)
+
+    def select_best_pop(self, accumulated_list):
+        accumulated_list = accumulated_list[::-1]
+        print accumulated_list
+        best = accumulated_list[150:]
+        rand = random.sample(accumulated_list, 50)
+        accumulated_list = best + rand
+        return accumulated_list
+
 
     @staticmethod
     def current_best_score(array):
@@ -82,8 +97,11 @@ class TSPGeneticAlgo:
         accumulated_fitness = zip(accumulated_list, unzipped_list[1])
         return accumulated_fitness
 
-    @staticmethod
-    def roulette_wheel_selection(accumulated_list):
+    def sorted_all_fintess(self):
+        self.sorted_fitness = sorted(self.all_fitness, key=itemgetter(0))
+
+
+    def roulette_wheel_selection(self):
         """
             iterating a range we get each time a random number from 0 to 1
             then we iterate the sorted list of accumulated fitness values and we get
@@ -91,7 +109,7 @@ class TSPGeneticAlgo:
              allowing each chromosome to be a parent more than once
         """
         random_number = random.random()
-        for element in accumulated_list:
+        for element in self.sorted_fitness:
             if element[0] > random_number:
                 return element
 
@@ -119,7 +137,9 @@ class TSPGeneticAlgo:
             if isinstance(double[1][1], (list, tuple)):
                 local_doubles.append(double[1][1])
         local_doubles = map(None, *[iter(local_doubles)] * 2)
-        for pair in local_doubles:
+        local_doubles_for_crossover = random.sample(local_doubles, len(local_doubles) / 2)
+        for pair in local_doubles_for_crossover:
+            local_doubles.remove(pair)
             ind1 = pair[0]
             ind2 = pair[1]
             size = min(len(ind1), len(ind2))
@@ -127,6 +147,9 @@ class TSPGeneticAlgo:
             ind1[cxpoint:], ind2[cxpoint:] = ind2[cxpoint:], ind1[cxpoint:]
             local_children.append(ind1)
             local_children.append(ind2)
+        for pop in local_doubles:
+            self.population_for_mutation.append(pop[0])
+            self.population_for_mutation.append(pop[1])
         return local_children
 
     def remove_duplicate_cities(self, in_list):
@@ -143,4 +166,81 @@ class TSPGeneticAlgo:
                 dirty.insert(index, differs[-1])
                 differs.pop()
             self.offsprings.append(dirty)
-        print len(self.offsprings)
+            self.children.append(dirty)
+
+    def mutate_pop(self):
+        self.i = 1
+        self.population_for_mutation_half_1 = self.population_for_mutation[:len(self.population_for_mutation) / 2]
+        self.population_for_mutation_half_2 = self.population_for_mutation[len(self.population_for_mutation) / 2:]
+        for i in self.population_for_mutation_half_1:
+            a = random.randint(1, len(self.population_for_mutation))
+            b = random.randint(1, len(self.population_for_mutation))
+            i[b], i[a] = i[a], i[b]
+        for lis in self.population_for_mutation_half_2:
+            lis = deque(lis)
+            lis.rotate(self.i)
+            self.i += 1
+        self.population_for_mutation = self.population_for_mutation_half_1 + self.population_for_mutation_half_2
+        self.offsprings = self.offsprings + self.population_for_mutation
+        return self.offsprings
+
+
+class circleGA(TSPGeneticAlgo):
+    def __init__(self, initial_population, children_population, total_best, tour_init):
+        self.children_dirty = []
+        self.children = []
+        self.offsprings = []
+        self.all_fitness = []
+        self.groups_of_two = []
+        self.population_for_mutation = []
+        self.selected_population = []
+        self.initial_population_c = initial_population
+        self.children_population_c = children_population
+        self.city_tour_init = tour_init
+        self.total_best = total_best
+        self.current_best = self.current_best_score(self.children_population_c)
+        if self.current_best < self.total_best:
+            self.total_best = self.current_best
+
+    def recursion_circle_output(self):
+        self.all_pop = self.children_population_c + self.initial_population_c
+        self.current_best = self.current_best_score(self.all_pop)
+        if self.current_best < self.total_best:
+            self.total_best = self.current_best
+        self.calculate_fitness(self.all_pop)
+        self.sorted_all_fintess()
+        self.selected_population = self.select_best_pop(self.sorted_fitness)
+        # for i in range(50):
+        # self.selected_population.append(self.roulette_wheel_selection(self.accumulated_list))
+
+
+    def clear_all_pop(self):
+        self.all_pop = []
+        for selected in self.selected_population:
+            self.all_pop.append(selected[1])
+        return self.all_pop
+
+    def create_new_children(self):
+        self.random_pick_doubles(self.selected_population)
+        self.children_dirty = self.crossover_genetic_operator(self.groups_of_two)
+        self.remove_duplicate_cities(self.children_dirty)
+        self.mutate_children()
+        return self.children
+
+    def mutate_children(self):
+        self.i = 1
+        self.offsprings_half = self.children[:len(self.children) / 2]
+        self.offsprings_half_1 = self.children[len(self.children) / 2:]
+        for i in self.offsprings_half:
+            a = random.randint(1, len(self.offsprings_half))
+            b = random.randint(1, len(self.offsprings_half))
+            i[b], i[a] = i[a], i[b]
+        for lis in self.offsprings_half_1:
+            lis = deque(lis)
+            lis.rotate(self.i)
+            self.i += 1
+        self.children = self.offsprings_half + self.offsprings_half_1
+        temp = self.children
+        self.children = temp[-1:] + temp[1:-1] + temp[:1]
+        print len(self.children)
+        return self.children

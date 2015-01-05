@@ -27,6 +27,7 @@ from tsp_ga import *
 matplotlib.use('TkAgg')
 init_tour = []  # the tour got from the TSP data file
 new_pop = []  # the initial population based on the above tour
+city_coords = []
 root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
@@ -48,6 +49,9 @@ def init_plot():
 
 
 init_plot()
+
+global shortest_path_cost
+
 
 def openfile(frame1=None):
     filename = tkFileDialog.askopenfilename()
@@ -81,52 +85,136 @@ def openfile(frame1=None):
 
     plot_tour(newtsp.city_tour_tuples)
     init_tour = newtsp.city_tour_init
+    city_coords = newtsp.city_coords
+
     current_tour_distance = TSPDistance(newtsp.city_tour_init, newtsp.city_coords)
     update_visual_current_distance(current_tour_distance.distance_cost)
     temp = []
 
-    def button_action(type):
-        offspring_distances = []
+    def create_initial_population_button(type):
         new_pop = create_init_pop(newtsp.city_coords, init_tour, type)
         distances_list = []
+
         for elem in new_pop:
             loc_dist = TSPDistance(elem, newtsp.city_coords)
 
             distances_list.append((loc_dist.distance_cost, loc_dist.tourlist))
-        global temp
         temp = map(sorted, distances_list)
         shortest_path = []
-        shortest_path_cost = min(i[0] for i in temp)
+        global shortest_path_distance_cost
+        shortest_path_distance_cost = min(i[0] for i in temp)
+
         for i in temp:
-            if i[0] == shortest_path_cost:
+            if i[0] == shortest_path_distance_cost:
                 shortest_path = (i[1])
         shortest_path_tuples = []
         for city in shortest_path:
             shortest_path_tuples.append(newtsp.city_coords.get(city))
 
-        update_visual_current_distance(shortest_path_cost)
+        update_visual_current_distance(shortest_path_distance_cost)
         plot_tour(shortest_path_tuples)
-        tsp_ga_solve = TSPGeneticAlgo(temp, newtsp.city_tour_init)
 
 
     var = StringVar(frame)
     var.set("shuffle")  # initial value
-
+    label_distance = ttk.Label(frame, text="Select mode:", background='lightgreen', font=('times', 12, 'bold'))
+    label_distance.grid(row=0, column=0, sticky=(W, N, S))
     option1 = OptionMenu(frame, var, "shuffle", "elitism")
-    option1.pack()
+    option1.grid(row=0, column=1, sticky=(W, N, S))
+    button = Button(frame, text="Create initial population", pady=5,
+                    command=lambda: create_initial_population_button(var.get()))
+    button.grid(row=1, column=0, columnspan=2, sticky=(E, W, N, S))
+    button1 = Button(frame, text="Create children", pady=3, command=lambda: create_offsprings_rone(init_tour))
+    button1.grid(row=3, column=0, columnspan=2, sticky=(E, W, N, S))
+    button2 = Button(frame, text="Start genetic algorithm", pady=3, command=lambda: start_solving)
+    button2.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
 
-    button = Button(frame, text="Create initial population", command=lambda: button_action(var.get()))
-    button.pack()
+
+    def create_offsprings_rone(city_tour_init):
+        tsp_ga_solve = TSPGeneticAlgo(temp, city_tour_init)
+        offspring_distances_list = []
+        for offspring in tsp_ga_solve.offsprings:
+            offspring_distance = TSPDistance(offspring, city_coords)
+            offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
+        local_temp = map(sorted, offspring_distances_list)
+        offspring_shortest_path = []
+        offspring_shortest_path_cost = min(i[0] for i in local_temp)
+        if offspring_shortest_path_cost < shortest_path_distance_cost:
+            shortest_path_distance_cost = offspring_shortest_path_cost
+            for i in local_temp:
+                if i[0] == offspring_shortest_path_cost:
+                    offspring_shortest_path = (i[1])
+            shortest_path = offspring_shortest_path
+            offspring_shortest_path_tuples = []
+            for city in shortest_path:
+                offspring_shortest_path_tuples.append(city_coords.get(city))
+
+            update_visual_current_distance(shortest_path_cost)
+            plot_tour(offspring_shortest_path_tuples)
 
 
-def create_init_pop(init_dict, init_tour, type):
-    """
-        We create the initial population with TSPInitialPopulation class
-        we pass the dict with cities and coordinates and the initial tour
-    """
-    new_pop = TSPInitialPopulation(init_dict, init_tour, 50,
-                                   type)  # plus the population initial size (here is 50)
-    return new_pop.pop_group
+    def start_solving():
+        def circle1(temp1, local_temp1):
+            temp = temp1
+            local_temp = local_temp1
+            offspring_distances_list = []
+            circle = circleGA(temp, local_temp)
+            circle.recursion_circle_output()
+
+            local_initial_population = circle.clear_all_pop()
+            for offspring in local_initial_population:
+                offspring_distance = TSPDistance(offspring, city_coords)
+                offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
+            local_temp = map(sorted, offspring_distances_list)
+            offspring_shortest_path = []
+            offspring_shortest_path_cost = min(i[0] for i in local_temp)
+            print offspring_shortest_path_cost
+            if offspring_shortest_path_cost < shortest_path_cost:
+                shortest_path_cost = offspring_shortest_path_cost
+                for i in local_temp:
+                    if i[0] == offspring_shortest_path_cost:
+                        offspring_shortest_path = (i[1])
+                shortest_path = offspring_shortest_path
+                offspring_shortest_path_tuples = []
+                for city in shortest_path:
+                    offspring_shortest_path_tuples.append(city_coords.get(city))
+
+                update_visual_current_distance(shortest_path_cost)
+                plot_tour(offspring_shortest_path_tuples)
+
+            local_children = circle.create_new_children()
+            for offspring in local_children:
+                offspring_distance = TSPDistance(offspring, city_coords)
+                offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
+            temp = map(sorted, offspring_distances_list)
+            offspring_shortest_path = []
+            offspring_shortest_path_cost = min(i[0] for i in temp)
+            print offspring_shortest_path_cost
+            if offspring_shortest_path_cost < shortest_path_cost:
+                shortest_path_cost = offspring_shortest_path_cost
+                for i in temp:
+                    if i[0] == offspring_shortest_path_cost:
+                        offspring_shortest_path = (i[1])
+                shortest_path = offspring_shortest_path
+                offspring_shortest_path_tuples = []
+                for city in shortest_path:
+                    offspring_shortest_path_tuples.append(city_coords.get(city))
+
+                update_visual_current_distance(shortest_path_cost)
+                plot_tour(offspring_shortest_path_tuples)
+
+        for i in range(50):
+            circle1(temp, local_temp)
+
+
+    def create_init_pop(init_dict, init_tour, type):
+        """
+            We create the initial population with TSPInitialPopulation class
+            we pass the dict with cities and coordinates and the initial tour
+        """
+        new_pop = TSPInitialPopulation(init_dict, init_tour, 50,
+                                       type)  # plus the population initial size (here is 50)
+        return new_pop.pop_group
 
 
 def update_visual_current_distance(distance):
