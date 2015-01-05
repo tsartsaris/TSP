@@ -122,6 +122,7 @@ class VisualSolve:
             self.init_tour = self.newtsp.city_tour_init
             self.city_coords = self.newtsp.city_coords
 
+
             self.current_tour_distance = TSPDistance(self.newtsp.city_tour_init, self.newtsp.city_coords)
             self.update_visual_current_distance(self.current_tour_distance.distance_cost)
             self.create_initial_population_visual_element()
@@ -154,14 +155,15 @@ class VisualSolve:
         self.text_distance.config(state=DISABLED)
 
     def create_initial_population_button(self, type):
-        self.new_pop = self.create_init_pop(self.newtsp.city_coords, self.init_tour, type)
-        distances_list = []
+        self.new_pop = self.create_init_pop(self.city_coords, self.init_tour, type)
+        # after the initial population created we evaluate the distances to see if we have
+        # a better solution than the one loaded with the parser
+        distances_list = []  # here we will store locally tuples of distance cost and tours
 
         for elem in self.new_pop:
-            loc_dist = TSPDistance(elem, self.newtsp.city_coords)
-
+            loc_dist = TSPDistance(elem, self.city_coords)
             distances_list.append((loc_dist.distance_cost, loc_dist.tourlist))
-        self.temp = map(sorted, distances_list)
+        self.temp = sorted(distances_list, key=lambda x: x[0])
         shortest_path = []
         shortest_path_distance_cost = min(i[0] for i in self.temp)
 
@@ -170,7 +172,7 @@ class VisualSolve:
                 shortest_path = (i[1])
         shortest_path_tuples = []
         for city in shortest_path:
-            shortest_path_tuples.append(self.newtsp.city_coords.get(city))
+            shortest_path_tuples.append(self.city_coords.get(city))
         self.best_tour.append((shortest_path_distance_cost, shortest_path))
         self.update_visual_current_distance(shortest_path_distance_cost)
         self.plot_tour(shortest_path_tuples)
@@ -184,7 +186,7 @@ class VisualSolve:
             we pass the dict with cities and coordinates and the initial tour
         """
         new_pop = TSPInitialPopulation(init_dict, init_tour, 200,
-                                       type)  # plus the population initial size (here is 50)
+                                       type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
     def create_offsprings_rone(self):
@@ -193,7 +195,7 @@ class VisualSolve:
         for offspring in tsp_ga_solve.offsprings:
             offspring_distance = TSPDistance(offspring, self.city_coords)
             offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
-        self.local_temp = map(sorted, offspring_distances_list)
+        self.local_temp = sorted(offspring_distances_list, key=lambda x: x[0])
         offspring_shortest_path = []
         offspring_shortest_path_cost = min(i[0] for i in self.local_temp)
         if offspring_shortest_path_cost < self.best_tour[0][0]:
@@ -224,13 +226,13 @@ class VisualSolve:
             for atom in local_initial_population:
                 atom_distance = TSPDistance(atom, self.city_coords)
                 atom_distances_list.append((atom_distance.distance_cost, atom_distance.tourlist))
-            self.temp = atom_distances_list
+            self.temp = sorted(atom_distances_list, key=lambda x: x[0])
 
             local_children = circle.create_new_children()
             for children in local_children:
                 children_distance = TSPDistance(children, self.city_coords)
                 children_distances_list.append((children_distance.distance_cost, children_distance.tourlist))
-            self.local_temp = children_distances_list
+            self.local_temp = sorted(children_distances_list, key=lambda x: x[0])
             children_shortest_path = []
             children_shortest_path_cost = min(i[0] for i in self.local_temp)
             if children_shortest_path_cost < self.best_tour[0][0]:

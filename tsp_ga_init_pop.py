@@ -24,19 +24,19 @@ from tsp_distance import euclidean_distance
 
 
 class TSPInitialPopulation:
-    def __init__(self, cities_dict, tour_list, pop_size, init_type="shuffle"):
-        self.pop_group = []
-        self.init_type = init_type
-        self.tour_list = tour_list
-        self.cities_dict = cities_dict
-        self.pop_size = pop_size
-        self.random_remaining_cities = self.tour_list[:]
+    def __init__(self, cities_dict, init_tour, pop_size, init_type="shuffle"):
+        self.pop_group = []  # this is the entire population produced
+        self.init_type = init_type  # this is the type of initialisation (shuffle or elitism)
+        self.init_tour = init_tour  # the initial tour provided
+        self.cities_dict = cities_dict  # the dictionary with city:coordinates
+        self.pop_size = pop_size  # the initial amount of population that will be created
+        self.random_remaining_cities = self.init_tour[:]
         self.random_cities = []
         if self.init_type == "shuffle":
-            self.shuffle_list(self.tour_list, self.pop_size)
+            self.shuffle_list(self.init_tour, self.pop_size)
         elif self.init_type == "elitism":
             half = self.pop_size / 2
-            self.shuffle_list(self.tour_list, half)
+            self.shuffle_list(self.init_tour, half)
             for i in range(half):
                 city = self.pick_random_city()
                 self.create_nearest_tour(city)
@@ -50,7 +50,7 @@ class TSPInitialPopulation:
             initial population
         """
         x = np.array(tour_list)
-        for i in range(pop_size):
+        while len(self.pop_group) < self.pop_size:
             y = np.random.permutation(x)
             if not any((y == x).all() for x in self.pop_group):
                 self.pop_group.append(y.tolist())
@@ -85,7 +85,7 @@ class TSPInitialPopulation:
         return self.random_city
 
     def create_nearest_tour(self, city):
-        prov_list = self.tour_list[:]
+        prov_list = self.init_tour[:]
         nearest_tour = [city]
         if city in prov_list: prov_list.remove(city)
         while prov_list:
