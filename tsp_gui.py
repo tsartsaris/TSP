@@ -17,7 +17,6 @@ import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from tsp_distance import *
 from tsp_parser import *
 from tsp_ga_init_pop import *
 from tsp_ga import *
@@ -159,7 +158,7 @@ class VisualSolve:
         # after the initial population created we evaluate the distances to see if we have
         # a better solution than the one loaded with the parser
         distances_list = []  # here we will store locally tuples of distance cost and tours
-
+        print len(self.new_pop)
         for elem in self.new_pop:
             loc_dist = TSPDistance(elem, self.city_coords)
             distances_list.append((loc_dist.distance_cost, loc_dist.tourlist))
@@ -176,7 +175,7 @@ class VisualSolve:
         self.best_tour.append((shortest_path_distance_cost, shortest_path))
         self.update_visual_current_distance(shortest_path_distance_cost)
         self.plot_tour(shortest_path_tuples)
-        button1 = Button(self.frame, text="Create children", pady=3, command=lambda: self.create_offsprings_rone())
+        button1 = Button(self.frame, text="Create children", pady=3, command=lambda: self.create_offsprings_round_one())
         button1.grid(row=3, column=0, columnspan=2, sticky=(E, W, N, S))
 
 
@@ -185,36 +184,36 @@ class VisualSolve:
             We create the initial population with TSPInitialPopulation class
             we pass the dict with cities and coordinates and the initial tour
         """
-        new_pop = TSPInitialPopulation(init_dict, init_tour, 200,
+        new_pop = TSPInitialPopulation(init_dict, init_tour, 100,
                                        type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
-    def create_offsprings_rone(self):
-        tsp_ga_solve = TSPGeneticAlgo(self.temp, self.init_tour, self.best_tour[0][0])
-        offspring_distances_list = []
-        for offspring in tsp_ga_solve.offsprings:
-            offspring_distance = TSPDistance(offspring, self.city_coords)
-            offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
-        self.local_temp = sorted(offspring_distances_list, key=lambda x: x[0])
-        offspring_shortest_path = []
-        offspring_shortest_path_cost = min(i[0] for i in self.local_temp)
-        if offspring_shortest_path_cost < self.best_tour[0][0]:
-            for i in self.local_temp:
-                if i[0] == offspring_shortest_path_cost:
-                    offspring_shortest_path = (i[1])
-            self.best_tour = []
-            self.best_tour.append((offspring_shortest_path_cost, offspring_shortest_path))
-            offspring_shortest_path_tuples = []
-            for city in offspring_shortest_path:
-                offspring_shortest_path_tuples.append(self.city_coords.get(city))
-
-            self.update_visual_current_distance(offspring_shortest_path_cost)
-            self.plot_tour(offspring_shortest_path_tuples)
-        button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
-        button2.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
+    def create_offsprings_round_one(self):
+        tsp_ga_solve = TSPGeneticAlgo(self.temp, self.init_tour, self.city_coords, self.best_tour[0])
+        # offspring_distances_list = []
+        # for offspring in tsp_ga_solve.offsprings:
+        # offspring_distance = TSPDistance(offspring, self.city_coords)
+        #     offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
+        # self.local_temp = sorted(offspring_distances_list, key=lambda x: x[0])
+        # offspring_shortest_path = []
+        # offspring_shortest_path_cost = min(i[0] for i in self.local_temp)
+        # if offspring_shortest_path_cost < self.best_tour[0][0]:
+        #     for i in self.local_temp:
+        #         if i[0] == offspring_shortest_path_cost:
+        #             offspring_shortest_path = (i[1])
+        #     self.best_tour = []
+        #     self.best_tour.append((offspring_shortest_path_cost, offspring_shortest_path))
+        #     offspring_shortest_path_tuples = []
+        #     for city in offspring_shortest_path:
+        #         offspring_shortest_path_tuples.append(self.city_coords.get(city))
+        #
+        #     self.update_visual_current_distance(offspring_shortest_path_cost)
+        #     self.plot_tour(offspring_shortest_path_tuples)
+        # button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
+        # button2.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
 
     def start_solving(self):
-        for i in range(200):
+        for i in range(2000):
             print self.temp[0]
             print self.local_temp[0]
             atom_distances_list = []
