@@ -24,9 +24,8 @@ import collections
 from tsp_distance import *
 
 
-class TSPGeneticAlgo:
-    def __init__(self, initial_population, city_tour_init, city_coords, total_best):
-        self.city_coords = city_coords
+class TSPGeneticAlgo(object):
+    def __init__(self, initial_population, city_tour_init, total_best):
         self.children_dirty = []
         self.groups_of_two = []
         self.selected_for_breeding = []  # here we store the population selected from the tournament selection
@@ -38,11 +37,14 @@ class TSPGeneticAlgo:
         self.tour_init = city_tour_init
         self.total_best = total_best[0]
         self.calculate_fitness(self.initial_population)
-        self.tournament_selection(self.all_fitness)
+        print self.all_fitness
+        # self.tournament_selection(self.all_fitness)
+        self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
-                                       0.8)  # produces population for crossover and mutation
+                                       0.6)  # produces population for crossover and mutation
         self.children_dirty = self.one_point_crossover(self.population_for_crossover)
         self.remove_duplicate_cities(self.children_dirty)
+        self.mutate_elitism()
 
     def fitness_function(self, city_cost):
         """
@@ -75,6 +77,7 @@ class TSPGeneticAlgo:
             for dub in local:
                 if dub[0] == best:
                     self.selected_for_breeding.append(dub)
+
 
     def random_pick_doubles(self, in_list):
         """
@@ -123,35 +126,161 @@ class TSPGeneticAlgo:
             local_children.append(child2)
         return local_children
 
+    def best_selection(self):
+        self.selected_for_breeding = self.all_fitness[:len(self.all_fitness) / 2]
+
     def remove_duplicate_cities(self, in_list):
         """
             The offsprings from the crossover contain duplicate cities which must
-            be removed by replacing them with cities that are not in the the child
+            be removed by replacing them with cities that are not in the offspring
         """
         for dirty in in_list:
             differs = [x for x in self.tour_init if x not in dirty]
-            doubles = [x for x, y in collections.Counter(dirty).items() if y > 1]
-            for double in doubles:
-                local_dirty = dirty[:]
-                cleaned_distances_list = []
-                local_cleaned = []
-                indexes = [i for i, x in enumerate(dirty) if
-                           x == double]  # for the duplicate value those are the indexes we can find it in the list
-                for index in indexes:
-                    for different in differs:
-                        del local_dirty(index)
-                        local_dirty.insert(index, different)
-                        local_cleaned.append(local_dirty)
-            print len(local_cleaned)
-            for cleaned in local_cleaned:
-                doubles1 = [x for x, y in collections.Counter(cleaned).items() if y > 1]
-                print doubles1
-                cleaned_distance = TSPDistance(cleaned, self.city_coords)
-                cleaned_distances_list.append((cleaned_distance.distance_cost, cleaned_distance.tourlist))
-                local_temp = sorted(cleaned_distances_list, key=lambda x: x[0])
-                cleaned_path = []
-                cleaned_shortest_path_cost = min(i[0] for i in local_temp)
-                for i in local_temp:
-                    if i[0] == cleaned_shortest_path_cost:
-                        cleaned_path = (i[1])
-            self.offsprings.append(cleaned_path)
+            uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
+            for unique in uniq:
+                index = dirty.index(unique)
+                dirty.pop(index)
+                dirty.insert(index, differs[-1])
+                differs.pop()
+            self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
+            # cleaned from duplicates in the self.offsprings list
+
+    @staticmethod
+    def insertion_mutation(in_list):
+        tour_range = len(in_list)
+        randomip = random.randint(0, tour_range)
+        city_to_insert = in_list.pop()
+        in_list.insert(randomip, city_to_insert)
+        return in_list
+
+    @staticmethod
+    def reciprocal_exchange_mutation(in_list):
+        a = random.randint(0, len(in_list) - 1)
+        b = random.randint(0, len(in_list) - 1)
+        in_list[b], in_list[a] = in_list[a], in_list[b]
+        return in_list
+
+    @staticmethod
+    def inversion_mutation(in_list):
+        a = random.randint(0, len(in_list) - 1)
+        b = random.randint(0, len(in_list) - 1)
+        if a < b:
+            a = a
+            b = b
+        elif a > b:
+            a = b
+            b = a
+        else:
+            pass
+        first, second, third = in_list[:a], in_list[a:b], in_list[b:]
+        in_list = first + second[::-1] + third
+        return in_list
+
+    def mutate_elitism(self):
+        for tour in self.population_for_mutation:
+            coin = random.randint(1, 3)
+            if coin == 1:
+                mutated = self.inversion_mutation(tour[1])
+                self.offsprings.append(mutated)
+            elif coin == 2:
+                mutated = self.reciprocal_exchange_mutation(tour[1])
+                self.offsprings.append(mutated)
+            else:
+                mutated = self.insertion_mutation(tour[1])
+                self.offsprings.append(mutated)
+
+
+class circleGA(TSPGeneticAlgo):
+    def __init__(self, temp, local_temp, city_tour_init, total_best, city_coords):
+        self.children_dirty = []
+        self.groups_of_two = []
+        self.population_for_crossover = []
+        self.population_for_mutation = []
+        self.children_dirty[:] = []
+        self.groups_of_two[:] = []
+        self.population_for_crossover[:] = []
+        self.population_for_mutation[:] = []
+        self.offsprings = []
+        self.offsprings[:] = []
+        self.temp = temp
+        self.local_temp = local_temp
+        self.tour_init = city_tour_init
+        self.total_best = total_best[0]
+        self.city_coords = city_coords
+        self.pre_temp = []
+        self.entire_population = []
+        self.all_fitness = []
+        self.all_fitness[:] = []
+        self.initial_population = []
+        self.initial_population[:] = []
+        self.selected_for_breeding = []  # here we store the population selected from the tournament selection
+        self.selected_for_breeding[:] = []
+        self.add_init_offsprings()
+        self.calculate_fitness(self.entire_population)
+        self.all_fitness_temp = []
+        self.all_fitness_temp[:] = self.all_fitness
+        # self.tournament_selection(self.all_fitness)
+        self.best_selection()
+
+        self.complete_initial_exchanged_population()
+        self.normalize_initial_population()
+        self.initial_population[:] = self.temp
+        self.selected_for_breeding[:] = []
+        self.calculate_fitness(self.initial_population)
+        #self.tournament_selection(self.all_fitness)
+        self.best_selection()
+        self.divide_breeding_mut_cross(self.selected_for_breeding,
+                                       0.2)  # produces population for crossover and mutation
+        self.children_dirty = self.one_point_crossover(self.population_for_crossover)
+        self.remove_duplicate_cities(self.children_dirty)
+        self.complete_population_for_mutation()
+        self.normalise_lists(self.population_for_mutation)
+        self.mutate_elitism()
+
+        print len(self.offsprings)
+
+
+    def add_init_offsprings(self):
+        self.entire_population = self.local_temp + self.temp
+
+    def complete_initial_exchanged_population(self):
+        while len(self.selected_for_breeding) < 100:
+            tour_to_add = random.choice(self.all_fitness_temp)
+            if tour_to_add not in self.selected_for_breeding:
+                self.selected_for_breeding.append(tour_to_add)
+
+    def complete_population_for_mutation(self):
+        if len(self.population_for_mutation) > 80:
+            while len(self.population_for_mutation) != 80:
+                todel = random.choice(self.population_for_mutation)
+                self.population_for_mutation.remove(todel)
+        else:
+            while len(self.population_for_mutation) != 80:
+                toadd = random.choice(self.population_for_mutation)
+                coin = random.randint(1, 3)
+                if coin == 1:
+                    mutated = self.inversion_mutation(toadd)
+                    self.population_for_mutation.append(mutated)
+                elif coin == 2:
+                    mutated = self.reciprocal_exchange_mutation(toadd)
+                    self.population_for_mutation.append(mutated)
+                else:
+                    mutated = self.insertion_mutation(toadd)
+                    self.population_for_mutation.append(mutated)
+
+    def normalize_initial_population(self):
+        for each in self.selected_for_breeding:
+            self.pre_temp.append(each[1])
+        pre_temp_distances_list = []
+        for offspring in self.pre_temp:
+            offspring_distance = TSPDistance(offspring, self.city_coords)
+            pre_temp_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
+        self.temp = sorted(pre_temp_distances_list, key=lambda x: x[0])
+
+
+    def normalise_lists(self, in_list):
+        for eachone in in_list:
+            if type(eachone[1]) == float:
+                eachone.reverse()
+
+
