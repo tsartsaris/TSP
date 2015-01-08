@@ -14,7 +14,9 @@ from Tkinter import *
 import tkFileDialog
 import ttk
 
+import matplotlib
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from tsp_parser import *
@@ -22,9 +24,19 @@ from tsp_ga_init_pop import *
 from tsp_ga import *
 
 
+matplotlib.use('TkAgg')
 root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
+
+
+def on_move(event):
+    # get the x and y pixel coords
+    x, y = event.x, event.y
+
+    if event.inaxes:
+        ax = event.inaxes  # the axes instance
+        print ('data coords %f %f' % (round(event.xdata, 1), round(event.ydata, 1)))
 
 
 class VisualSolve:
@@ -46,14 +58,15 @@ class VisualSolve:
         """
             Create an empty initial plot to instantiate the GUI layout
         """
-        f = Figure(figsize=(8, 6), dpi=100)
-        a = f.add_subplot(111)
-        a.plot(10, 10)
-        a.set_title('Current tour plot')
-        a.set_xlabel('X axis coordinates')
-        a.set_ylabel('Y axis coordinates')
-        canvas = FigureCanvasTkAgg(f, master)
-        canvas.show()
+        b = Figure(figsize=(8, 6), dpi=100)
+        ac = b.add_subplot(111)
+        ac.plot(10, 10)
+        ac.set_title('Current tour plot')
+        ac.set_xlabel('X axis coordinates')
+        ac.set_ylabel('Y axis coordinates')
+        ac.grid(True)
+        canvas = FigureCanvasTkAgg(b, master)
+        canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
 
 
@@ -131,17 +144,25 @@ class VisualSolve:
             We call this passing the list of tuples with city
             coordinates to plot the tour we want on the GUI
         """
-        f = Figure(figsize=(8, 6), dpi=100)
-        a = f.add_subplot(111)
-        a.scatter(*zip(*tour_tuples))
-        a.plot(*zip(*tour_tuples))
-        a.set_title('Current best tour')
-        a.set_xlabel('X axis coordinates')
-        a.set_ylabel('Y axis coordinates')
+        data_in_array = np.array(tour_tuples)
+        transposed = data_in_array.T
+        x, y = transposed
+        plt.ion()
+        self.f, self.a = plt.subplots(1, 1)
+        self.f = Figure(figsize=(8, 6), dpi=100)
+        self.a = self.f.add_subplot(111, navigate=True)
+        self.a.plot(x, y, 'ro')
+        self.a.plot(x, y, 'b-')
+        self.a.set_title('Current best tour')
+        self.a.set_xlabel('X axis coordinates')
+        self.a.set_ylabel('Y axis coordinates')
+        self.a.grid(True)
+        self.canvas = FigureCanvasTkAgg(self.f, master=root)
+        self.canvas.mpl_connect('motion_notify_event', on_move)
+        self.canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
 
-        canvas = FigureCanvasTkAgg(f, master=root)
-        canvas.show()
-        canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
+        plt.close('all')
+
 
     def update_visual_current_distance(self, distance):
         """
@@ -183,7 +204,7 @@ class VisualSolve:
             We create the initial population with TSPInitialPopulation class
             we pass the dict with cities and coordinates and the initial tour
         """
-        new_pop = TSPInitialPopulation(init_dict, init_tour, 100,
+        new_pop = TSPInitialPopulation(init_dict, init_tour, 200,
                                        type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
@@ -215,7 +236,7 @@ class VisualSolve:
         return self
 
     def start_solving(self):
-        for i in range(2000):
+        for i in range(5000):
             circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords)
             children_distances_list = []
             children_distances_list[:] = []
@@ -224,6 +245,8 @@ class VisualSolve:
                 children_distances_list.append((child_distance.distance_cost, child_distance.tourlist))
             self.local_temp[:] = []
             self.local_temp = sorted(children_distances_list, key=lambda x: x[0])
+            print self.local_temp[0]
+            print self.temp[0]
             while len(self.local_temp) > 100:
                 self.local_temp.pop()
             children_shortest_path = []

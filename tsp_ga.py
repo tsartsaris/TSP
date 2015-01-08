@@ -37,11 +37,10 @@ class TSPGeneticAlgo(object):
         self.tour_init = city_tour_init
         self.total_best = total_best[0]
         self.calculate_fitness(self.initial_population)
-        print self.all_fitness
         # self.tournament_selection(self.all_fitness)
         self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
-                                       0.6)  # produces population for crossover and mutation
+                                       0.4)  # produces population for crossover and mutation
         self.children_dirty = self.one_point_crossover(self.population_for_crossover)
         self.remove_duplicate_cities(self.children_dirty)
         self.mutate_elitism()
@@ -51,7 +50,7 @@ class TSPGeneticAlgo(object):
             We apply the fitness function to each distance by
             dividing the lowest with each one of them
         """
-        return round(float(float(self.total_best) / float(city_cost)), 3)
+        return round(float(float(self.total_best) / float(city_cost)), 4)
 
     def calculate_fitness(self, in_list):
         """
@@ -176,14 +175,20 @@ class TSPGeneticAlgo(object):
         in_list = first + second[::-1] + third
         return in_list
 
+    @staticmethod
+    def inverse(in_list):
+        in_list.reverse()
+        return in_list
+
+
     def mutate_elitism(self):
         for tour in self.population_for_mutation:
             coin = random.randint(1, 3)
             if coin == 1:
-                mutated = self.inversion_mutation(tour[1])
+                mutated = self.insertion_mutation(tour[1])
                 self.offsprings.append(mutated)
             elif coin == 2:
-                mutated = self.reciprocal_exchange_mutation(tour[1])
+                mutated = self.insertion_mutation(tour[1])
                 self.offsprings.append(mutated)
             else:
                 mutated = self.insertion_mutation(tour[1])
@@ -219,15 +224,20 @@ class circleGA(TSPGeneticAlgo):
         self.calculate_fitness(self.entire_population)
         self.all_fitness_temp = []
         self.all_fitness_temp[:] = self.all_fitness
+        # num = random.randint(1,2)
+        # if num == 1:
         # self.tournament_selection(self.all_fitness)
+        # else:
         self.best_selection()
-
         self.complete_initial_exchanged_population()
         self.normalize_initial_population()
         self.initial_population[:] = self.temp
         self.selected_for_breeding[:] = []
         self.calculate_fitness(self.initial_population)
-        #self.tournament_selection(self.all_fitness)
+        # num = random.randint(1,2)
+        # if num == 1:
+        # self.tournament_selection(self.all_fitness)
+        # else:
         self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
                                        0.2)  # produces population for crossover and mutation
@@ -259,10 +269,10 @@ class circleGA(TSPGeneticAlgo):
                 toadd = random.choice(self.population_for_mutation)
                 coin = random.randint(1, 3)
                 if coin == 1:
-                    mutated = self.inversion_mutation(toadd)
+                    mutated = self.insertion_mutation(toadd)
                     self.population_for_mutation.append(mutated)
                 elif coin == 2:
-                    mutated = self.reciprocal_exchange_mutation(toadd)
+                    mutated = self.insertion_mutation(toadd)
                     self.population_for_mutation.append(mutated)
                 else:
                     mutated = self.insertion_mutation(toadd)
