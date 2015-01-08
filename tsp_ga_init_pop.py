@@ -78,8 +78,8 @@ class TSPInitialPopulation:
         """
             Given a city return the coordinates (x,y)
         """
-        self.city_coords = self.cities_dict.get(city)
-        return self.city_coords
+        return self.cities_dict.get(city)
+
 
     def pick_random_city(self):
         """
