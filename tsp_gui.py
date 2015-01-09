@@ -85,9 +85,14 @@ class VisualSolve:
         label_distance.grid(row=0, column=0, sticky=(W, N, S))
         option1 = OptionMenu(self.frame, var, "shuffle", "elitism")
         option1.grid(row=0, column=1, sticky=(W, N, S))
+        label_population = ttk.Label(self.frame, text="Choose population size", background="lightblue",
+                                     font=('times', 12, 'bold'))
+        label_population.grid(row=1, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.w = Scale(self.frame, from_=150, to=1000, orient=HORIZONTAL)
+        self.w.grid(row=2, column=0, columnspan=2, sticky=(E, W, N, S))
         button = Button(self.frame, text="Create initial population", pady=5,
                         command=lambda: self.create_initial_population_button(var.get()))
-        button.grid(row=1, column=0, columnspan=2, sticky=(E, W, N, S))
+        button.grid(row=3, column=0, columnspan=2, sticky=(E, W, N, S))
 
     def openfile(self, frame1=None):
         """
@@ -148,7 +153,7 @@ class VisualSolve:
         transposed = data_in_array.T
         x, y = transposed
         plt.ion()
-        self.f, self.a = plt.subplots(1, 1)
+        # self.f, self.a = plt.subplots(1, 1)
         self.f = Figure(figsize=(8, 6), dpi=100)
         self.a = self.f.add_subplot(111, navigate=True)
         self.a.plot(x, y, 'ro')
@@ -160,8 +165,8 @@ class VisualSolve:
         self.canvas = FigureCanvasTkAgg(self.f, master=root)
         self.canvas.mpl_connect('motion_notify_event', on_move)
         self.canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
-
-        plt.close('all')
+        self.canvas.draw()
+        self.canvas.show()
 
 
     def update_visual_current_distance(self, distance):
@@ -196,7 +201,7 @@ class VisualSolve:
         self.update_visual_current_distance(shortest_path_distance_cost)
         self.plot_tour(shortest_path_tuples)
         button1 = Button(self.frame, text="Create children", pady=3, command=lambda: self.create_offsprings_round_one())
-        button1.grid(row=3, column=0, columnspan=2, sticky=(E, W, N, S))
+        button1.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
 
 
     def create_init_pop(self, init_dict, init_tour, type):
@@ -204,7 +209,8 @@ class VisualSolve:
             We create the initial population with TSPInitialPopulation class
             we pass the dict with cities and coordinates and the initial tour
         """
-        new_pop = TSPInitialPopulation(init_dict, init_tour, 200,
+        initial_population_size = self.w.get()
+        new_pop = TSPInitialPopulation(init_dict, init_tour, initial_population_size,
                                        type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
@@ -215,8 +221,8 @@ class VisualSolve:
             offspring_distance = TSPDistance(offspring, self.city_coords)
             offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
         self.local_temp = sorted(offspring_distances_list, key=lambda x: x[0])
-        while len(self.local_temp) > 100:
-            self.local_temp.pop()
+        # while len(self.local_temp) > 100:
+        #     self.local_temp.pop()
         offspring_shortest_path = []
         offspring_shortest_path_cost = min(i[0] for i in self.local_temp)
         if offspring_shortest_path_cost < self.best_tour[0][0]:
@@ -231,12 +237,19 @@ class VisualSolve:
 
             self.update_visual_current_distance(offspring_shortest_path_cost)
             self.plot_tour(offspring_shortest_path_tuples)
+        label_rounds = ttk.Label(self.frame, text="Choose rounds", background="lightblue",
+                                 font=('times', 12, 'bold'))
+        label_rounds.grid(row=5, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.crounds = Scale(self.frame, from_=1, to=10000, orient=HORIZONTAL)
+        self.crounds.grid(row=6, column=0, columnspan=2, sticky=(E, W, N, S))
         button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
-        button2.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
+        button2.grid(row=7, column=0, columnspan=2, sticky=(E, W, N, S))
         return self
 
     def start_solving(self):
-        for i in range(5000):
+        rounds = self.crounds.get()
+        for i in range(rounds):
+            print i
             circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords)
             children_distances_list = []
             children_distances_list[:] = []
@@ -245,14 +258,11 @@ class VisualSolve:
                 children_distances_list.append((child_distance.distance_cost, child_distance.tourlist))
             self.local_temp[:] = []
             self.local_temp = sorted(children_distances_list, key=lambda x: x[0])
-            print self.local_temp[0]
-            print self.temp[0]
-            while len(self.local_temp) > 100:
-                self.local_temp.pop()
+            self.temp[:] = []
+            self.temp = circle.initial_population
             children_shortest_path = []
             children_shortest_path[:] = []
             children_shortest_path_cost = min(i[0] for i in self.local_temp)
-            print children_shortest_path_cost
             if children_shortest_path_cost < self.best_tour[0][0]:
                 for i in self.local_temp:
                     if i[0] == children_shortest_path_cost:
