@@ -105,7 +105,7 @@ class VisualSolve:
         label_population = ttk.Label(self.frame, text="Choose population size", background="lightblue",
                                      font=('times', 12, 'bold'))
         label_population.grid(row=1, column=0, columnspan=2, sticky=(E, W, N, S))
-        self.w = Scale(self.frame, from_=150, to=1000, orient=HORIZONTAL)
+        self.w = Scale(self.frame, from_=150, to=1000, resolution=10, orient=HORIZONTAL)
         self.w.grid(row=2, column=0, columnspan=2, sticky=(E, W, N, S))
         button = Button(self.frame, text="Create initial population", pady=5,
                         command=lambda: self.create_initial_population_button(var.get()))
@@ -257,7 +257,7 @@ class VisualSolve:
         label_rounds = ttk.Label(self.frame, text="Choose rounds", background="lightblue",
                                  font=('times', 12, 'bold'))
         label_rounds.grid(row=5, column=0, columnspan=2, sticky=(E, W, N, S))
-        self.crounds = Scale(self.frame, from_=1, to=10000, orient=HORIZONTAL)
+        self.crounds = Scale(self.frame, from_=1, to=10000, resolution=100, orient=HORIZONTAL)
         self.crounds.grid(row=6, column=0, columnspan=2, sticky=(E, W, N, S))
         button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
         button2.grid(row=7, column=0, columnspan=2, sticky=(E, W, N, S))

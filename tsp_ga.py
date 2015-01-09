@@ -142,32 +142,35 @@ class TSPGeneticAlgo(object):
             be removed by replacing them with cities that are not in the offspring
         """
         for dirty in in_list:
-            coin = random.randint(1, 2)
-            if coin == 1:
-                self.random_cities = []
-                self.random_cities[:] = []
-                self.differs = [x for x in self.tour_init if x not in dirty]
-                uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
-                if self.differs and uniq:
-                    self.random_remaining_cities = self.differs[:]
-                    for unique in uniq:
-                        index = dirty.index(unique)
-                        dirty.pop(index)
-                    city = self.pick_random_city()
-                    best_nn_tour = self.create_nearest_tour(city)
-                    random_place = random.randint(0, len(dirty) - 1)
-                    dirty = dirty[:random_place] + best_nn_tour + dirty[random_place:]
-                    self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
-                    # cleaned from duplicates in the self.offsprings list
-            else:
-                differs = [x for x in self.tour_init if x not in dirty]
-                uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
+            # coin = random.randint(1, 10)
+            # if coin == 1:
+            self.random_cities = []
+            self.random_cities[:] = []
+            self.differs = [x for x in self.tour_init if x not in dirty]
+            uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
+            if self.differs and uniq:
+                self.random_remaining_cities = self.differs[:]
                 for unique in uniq:
                     index = dirty.index(unique)
                     dirty.pop(index)
-                    dirty.insert(index, differs[-1])
-                    differs.pop()
+                city = self.pick_random_city()
+                best_nn_tour = self.create_nearest_tour(city)
+                coin = random.randint(0, 1)
+                if coin == 0:
+                    dirty = dirty + best_nn_tour
+                else:
+                    dirty = best_nn_tour + dirty
                 self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
+                # cleaned from duplicates in the self.offsprings list
+            # else:
+            # differs = [x for x in self.tour_init if x not in dirty]
+            #     uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
+            #     for unique in uniq:
+            #         index = dirty.index(unique)
+            #         dirty.pop(index)
+            #         dirty.insert(index, differs[-1])
+            #         differs.pop()
+            self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
                 # cleaned from duplicates in the self.offsprings list
 
     def find_nn(self, city, list):
@@ -324,7 +327,7 @@ class circleGA(TSPGeneticAlgo):
         self.entire_population[:] = []
         self.entire_population = self.temp + self.local_temp
         self.entire_population = sorted(self.entire_population, key=lambda x: x[0])
-        self.entire_population = self.entire_population[:200]
+        self.entire_population = self.entire_population[:100]
 
 
     def complete_initial_exchanged_population(self):
