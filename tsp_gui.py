@@ -78,6 +78,23 @@ class VisualSolve:
         self.text_distance = Text(master, width=10, height=1, bg='lightgreen', fg="red", font=('times', 12, 'bold'))
         self.text_distance.grid(row=0, column=3, sticky=(W, N, S, E))
 
+
+    def update_round_visual_element(self):
+        label_round = ttk.Label(self.frame, text="Current round:", background='lightgreen',
+                                font=('times', 12, 'bold'))
+        label_round.grid(row=8, column=0, sticky=(W, N, S, E))
+        # this get changed from update_current_visual_distance
+        self.text_round = Label(self.frame, bg='lightgreen', font=('times', 12, 'bold'))
+        self.text_round.grid(row=8, column=1, sticky=(W, N, S, E))
+
+    def update_visual_round(self, round):
+        """
+            Each time we want to update the distance on the GUI
+            we call this passing the distance as parameter
+        """
+
+        self.text_round.config(text=round)
+
     def create_initial_population_visual_element(self):
         var = StringVar(self.frame)
         var.set("shuffle")  # initial value
@@ -248,8 +265,10 @@ class VisualSolve:
 
     def start_solving(self):
         rounds = self.crounds.get()
+        self.update_round_visual_element()
         for i in range(rounds):
             print i
+            round = i
             circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords)
             children_distances_list = []
             children_distances_list[:] = []
@@ -275,6 +294,7 @@ class VisualSolve:
                     children_shortest_path_tupples.append(self.city_coords.get(city))
                 self.update_visual_current_distance(children_shortest_path_cost)
                 self.plot_tour(children_shortest_path_tupples)
+            self.update_visual_round(round)
 
 
 
