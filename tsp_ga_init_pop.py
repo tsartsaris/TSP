@@ -116,22 +116,23 @@ class TSPInitialPopulation:
 
     def mutate_elitism(self):
         for tour in self.elitism_group:
-            if random.getrandbits(1) == 1:
-                self.elitism_population_for_mutation.append(tour)
-            else:
-                self.pop_group.append(tour)
-
-        for elit_tour in self.elitism_population_for_mutation:
-            coin = random.randint(1, 3)
-            if coin == 1:
-                mutated = self.inversion_mutation(elit_tour)
-                self.pop_group.append(mutated)
-            elif coin == 2:
-                mutated = self.reciprocal_exchange_mutation(elit_tour)
-                self.pop_group.append(mutated)
-            else:
-                mutated = self.insertion_mutation(elit_tour)
-                self.pop_group.append(mutated)
+	        self.pop_group.append(tour)
+	        # if random.getrandbits(1) == 1:
+	        # self.elitism_population_for_mutation.append(tour)
+	        #     else:
+	        #         self.pop_group.append(tour)
+	        #
+	        # for elit_tour in self.elitism_population_for_mutation:
+	        #     coin = random.randint(1, 3)
+	        #     if coin == 1:
+	        #         mutated = self.inversion_mutation(elit_tour)
+	        #         self.pop_group.append(mutated)
+	        #     elif coin == 2:
+	        #         mutated = self.reciprocal_exchange_mutation(elit_tour)
+	        #         self.pop_group.append(mutated)
+	        #     else:
+	        #         mutated = self.insertion_mutation(elit_tour)
+	        #         self.pop_group.append(mutated)
 
     @staticmethod
     def insertion_mutation(in_list):
