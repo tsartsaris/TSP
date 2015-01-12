@@ -149,28 +149,46 @@ class TSPGeneticAlgo(object):
             self.differs = [x for x in self.tour_init if x not in dirty]
             uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
             if self.differs and uniq:
-                self.random_remaining_cities = self.differs[:]
-                for unique in uniq:
-                    index = dirty.index(unique)
-                    dirty.pop(index)
-                city = self.pick_random_city()
-                best_nn_tour = self.create_nearest_tour(city)
-                coin = random.randint(0, 1)
+                coin = random.randint(0, 3)
                 if coin == 0:
+                    self.random_remaining_cities = self.differs[:]
+                    for unique in uniq:
+                        index = dirty.index(unique)
+                        dirty.pop(index)
+                    city = self.pick_random_city()
+                    best_nn_tour = self.create_nearest_tour(city)
                     dirty = dirty + best_nn_tour
-                else:
+                elif coin == 1:
+                    self.random_remaining_cities = self.differs[:]
+                    for unique in uniq:
+                        index = dirty.index(unique)
+                        dirty.pop(index)
+                    city = self.pick_random_city()
+                    best_nn_tour = self.create_nearest_tour(city)
                     dirty = best_nn_tour + dirty
-                self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
+                elif coin == 2:
+                    self.random_remaining_cities = self.differs[:]
+                    for unique in uniq:
+                        index = dirty.index(unique)
+                        dirty.pop(index)
+                    city = self.pick_random_city()
+                    best_nn_tour = self.create_nearest_tour(city)
+                    randominsert = random.randint(1, len(dirty) - 1)
+                    dirty = dirty[:randominsert] + best_nn_tour + dirty[randominsert:]
+                else:
+                    for unique in uniq:
+                        index = dirty.index(unique)
+                        dirty.pop(index)
+                        dirty.insert(index, self.differs[-1])
+                        self.differs.pop()
+
+            self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
                 # cleaned from duplicates in the self.offsprings list
             # else:
             # differs = [x for x in self.tour_init if x not in dirty]
             #     uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
-            #     for unique in uniq:
-            #         index = dirty.index(unique)
-            #         dirty.pop(index)
-            #         dirty.insert(index, differs[-1])
-            #         differs.pop()
-            self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
+            #
+            # self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
                 # cleaned from duplicates in the self.offsprings list
 
     def find_nn(self, city, list):
@@ -337,12 +355,12 @@ class circleGA(TSPGeneticAlgo):
                 self.selected_for_breeding.append(tour_to_add)
 
     def complete_population_for_mutation(self):
-        if len(self.population_for_mutation) > 20:
-            while len(self.population_for_mutation) != 20:
+        if len(self.population_for_mutation) > 10:
+            while len(self.population_for_mutation) != 10:
                 todel = random.choice(self.population_for_mutation)
                 self.population_for_mutation.remove(todel)
         else:
-            while len(self.population_for_mutation) != 20:
+            while len(self.population_for_mutation) != 10:
                 toadd = random.choice(self.all_fitness_temp)
                 coin = random.randint(1, 3)
                 if coin == 1:
