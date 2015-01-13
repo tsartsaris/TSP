@@ -20,6 +20,7 @@ __status__ = "Development"
 from operator import itemgetter
 import random
 import collections
+import copy
 
 from tsp_distance import *
 
@@ -131,6 +132,37 @@ class TSPGeneticAlgo(object):
             child2 = ind2[cxpoint:] + ind1[:cxpoint]
             local_children.append(child1)
             local_children.append(child2)
+        return local_children
+
+    def pmx_crossover(self, in_list):
+        """
+            Given the list of chromosomes we first create random pairs of doubles
+            and the we apply a simple point crossover by choosing a random point in
+            the operator is going to take place
+        """
+        local_children = []
+        self.random_pick_doubles(in_list)
+        local_doubles = self.groups_of_two
+        while local_doubles:
+            double = local_doubles.pop()
+            mom = double[0][1]
+            dad = double[1][1]
+            size = len(mom)
+            points = random.sample(range(size), 2)
+            x, y = min(points), max(points)
+            bro = copy.copy(dad)
+            bro[x:y + 1] = mom[x:y + 1]
+            sis = copy.copy(mom)
+            sis[x:y + 1] = dad[x:y + 1]
+            for parent, child in zip([dad, mom], [bro, sis]):
+                for i in range(x, y + 1):
+                    if parent[i] not in child[x:y + 1]:
+                        spot = i
+                        while x <= spot <= y:
+                            spot = parent.index(child[spot])
+                        child[spot] = parent[i]
+            local_children.append(bro)
+            local_children.append(sis)
         return local_children
 
     def best_selection(self):
@@ -331,7 +363,12 @@ class circleGA(TSPGeneticAlgo):
         self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
                                        0.9)  # produces population for crossover and mutation
-        self.children_dirty = self.one_point_crossover(self.population_for_crossover)
+        crosscoin = random.randint(0, 4)
+        if crosscoin == 0:
+            self.children_dirty = self.pmx_crossover(self.population_for_crossover)
+        else:
+            self.children_dirty = self.one_point_crossover(self.population_for_crossover)
+
         self.remove_duplicate_cities(self.children_dirty)
         self.complete_population_for_mutation()
         self.normalise_lists(self.population_for_mutation)
@@ -345,22 +382,22 @@ class circleGA(TSPGeneticAlgo):
         self.entire_population[:] = []
         self.entire_population = self.temp + self.local_temp
         self.entire_population = sorted(self.entire_population, key=lambda x: x[0])
-        self.entire_population = self.entire_population[:100]
+        self.entire_population = self.entire_population[:300]
 
 
     def complete_initial_exchanged_population(self):
-        while len(self.selected_for_breeding) < 100:
+        while len(self.selected_for_breeding) < 300:
             tour_to_add = random.choice(self.all_fitness_temp)
             if tour_to_add not in self.selected_for_breeding:
                 self.selected_for_breeding.append(tour_to_add)
 
     def complete_population_for_mutation(self):
-        if len(self.population_for_mutation) > 10:
-            while len(self.population_for_mutation) != 10:
+        if len(self.population_for_mutation) > 30:
+            while len(self.population_for_mutation) != 30:
                 todel = random.choice(self.population_for_mutation)
                 self.population_for_mutation.remove(todel)
         else:
-            while len(self.population_for_mutation) != 10:
+            while len(self.population_for_mutation) != 30:
                 toadd = random.choice(self.all_fitness_temp)
                 coin = random.randint(1, 3)
                 if coin == 1:
@@ -382,8 +419,8 @@ class circleGA(TSPGeneticAlgo):
             pre_temp_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
         self.temp = sorted(pre_temp_distances_list, key=lambda x: x[0])
 
-
-    def normalise_lists(self, in_list):
+    @staticmethod
+    def normalise_lists(in_list):
         for eachone in in_list:
             if type(eachone[1]) == float:
                 eachone.reverse()
@@ -392,5 +429,6 @@ class circleGA(TSPGeneticAlgo):
         self.initial_population[:] = []
         self.initial_population = sorted(self.temp, key=lambda x: x[0])
         return self.initial_population
+
 
 
