@@ -13,6 +13,7 @@ __status__ = "Development"
 from Tkinter import *
 import tkFileDialog
 import ttk
+import threading
 
 import matplotlib
 from matplotlib.figure import Figure
@@ -157,7 +158,7 @@ class VisualSolve:
             text_error.insert('1.0', self.newtsp.filename)
             text_error.config(state=DISABLED)
 
-            self.plot_tour(self.newtsp.city_tour_tuples)
+            self.plot_points(self.newtsp.city_tour_tuples)
             self.init_tour = self.newtsp.city_tour_init
             self.city_coords = self.newtsp.city_coords
 
@@ -170,6 +171,32 @@ class VisualSolve:
             We call this passing the list of tuples with city
             coordinates to plot the tour we want on the GUI
         """
+        tour_tuples.append(tour_tuples[0])
+        data_in_array = np.array(tour_tuples)
+        transposed = data_in_array.T
+        x, y = transposed
+        plt.ion()
+        self.a.cla()
+        # self.f, self.a = plt.subplots(1, 1)
+        # self.f = Figure(figsize=(8, 6), dpi=100)
+        # self.a = self.f.add_subplot(111, navigate=True)
+        self.a.plot(x, y, 'ro')
+        self.a.plot(x, y, 'b-')
+        # self.a.set_title('Current best tour')
+        # self.a.set_xlabel('X axis coordinates')
+        # self.a.set_ylabel('Y axis coordinates')
+        # self.a.grid(True)
+        # self.canvas = FigureCanvasTkAgg(self.f, master=root)
+        # self.canvas.mpl_connect('motion_notify_event', on_move)
+        # self.canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
+        self.canvas.draw()
+        # self.canvas.show()
+
+    def plot_points(self, tour_tuples):
+        """
+            We call this passing the list of tuples with city
+            coordinates to plot the tour we want on the GUI
+        """
         data_in_array = np.array(tour_tuples)
         transposed = data_in_array.T
         x, y = transposed
@@ -178,7 +205,7 @@ class VisualSolve:
         self.f = Figure(figsize=(8, 6), dpi=100)
         self.a = self.f.add_subplot(111, navigate=True)
         self.a.plot(x, y, 'ro')
-        self.a.plot(x, y, 'b-')
+        # self.a.plot(x, y, 'b-')
         self.a.set_title('Current best tour')
         self.a.set_xlabel('X axis coordinates')
         self.a.set_ylabel('Y axis coordinates')
@@ -230,8 +257,8 @@ class VisualSolve:
             We create the initial population with TSPInitialPopulation class
             we pass the dict with cities and coordinates and the initial tour
         """
-        initial_population_size = self.w.get()
-        new_pop = TSPInitialPopulation(init_dict, init_tour, initial_population_size,
+        self.initial_population_size = self.w.get()
+        new_pop = TSPInitialPopulation(init_dict, init_tour, self.initial_population_size,
                                        type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
@@ -239,7 +266,9 @@ class VisualSolve:
         tsp_ga_solve = TSPGeneticAlgo(self.temp, self.init_tour, self.best_tour[0])
         offspring_distances_list = []
         for offspring in tsp_ga_solve.offsprings:
+            offspring.append(offspring[0])
             offspring_distance = TSPDistance(offspring, self.city_coords)
+            offspring.pop()
             offspring_distances_list.append((offspring_distance.distance_cost, offspring_distance.tourlist))
         self.local_temp = sorted(offspring_distances_list, key=lambda x: x[0])
         # while len(self.local_temp) > 100:
@@ -264,41 +293,58 @@ class VisualSolve:
         self.crounds = Scale(self.frame, from_=1, to=10000, resolution=100, orient=HORIZONTAL)
         self.crounds.grid(row=6, column=0, columnspan=2, sticky=(E, W, N, S))
         button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
-        button2.grid(row=7, column=0, columnspan=2, sticky=(E, W, N, S))
+        button2.grid(row=12, column=0, columnspan=2, sticky=(E, W, N, S))
+        label_p = ttk.Label(self.frame, text="Crossover probability", background="lightblue",
+                            font=('times', 12, 'bold'))
+        label_p.grid(row=9, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.p = Scale(self.frame, from_=0.1, to=1, resolution=0.1, orient=HORIZONTAL)
+        self.p.grid(row=10, column=0, columnspan=2, sticky=(E, W, N, S))
         return self
 
     def start_solving(self):
-        rounds = self.crounds.get()
-        self.update_round_visual_element()
-        for i in range(rounds):
-            print i
-            round = i
-            circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords)
-            children_distances_list = []
-            children_distances_list[:] = []
-            for child in circle.offsprings:
-                child_distance = TSPDistance(child, self.city_coords)
-                children_distances_list.append((child_distance.distance_cost, child_distance.tourlist))
-            self.local_temp[:] = []
-            self.local_temp = sorted(children_distances_list, key=lambda x: x[0])
-            self.temp[:] = []
-            self.temp = circle.initial_population
-            children_shortest_path = []
-            children_shortest_path[:] = []
-            children_shortest_path_cost = min(i[0] for i in self.local_temp)
-            if children_shortest_path_cost < self.best_tour[0][0]:
-                for i in self.local_temp:
-                    if i[0] == children_shortest_path_cost:
-                        children_shortest_path = (i[1])
-                self.best_tour[:] = []
-                self.best_tour.append((children_shortest_path_cost, children_shortest_path))
-                children_shortest_path_tupples = []
-                children_shortest_path_tupples[:] = []
-                for city in children_shortest_path:
-                    children_shortest_path_tupples.append(self.city_coords.get(city))
-                self.update_visual_current_distance(children_shortest_path_cost)
-                self.plot_tour(children_shortest_path_tupples)
-            self.update_visual_round(round)
+        def callback():
+            self.round_pop_size = self.initial_population_size - 100
+            rounds = self.crounds.get()
+            self.update_round_visual_element()
+            if self.p.get() == 0.1:
+                self.p.set(0.9)
+            for i in range(rounds):
+                p = self.p.get()
+                print p
+                print i
+                round = i
+                circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords,
+                                  self.round_pop_size, p)
+                children_distances_list = []
+                children_distances_list[:] = []
+                for child in circle.offsprings:
+                    child.append(child[0])
+                    child_distance = TSPDistance(child, self.city_coords)
+                    child.pop()
+                    children_distances_list.append((child_distance.distance_cost, child_distance.tourlist))
+                self.local_temp[:] = []
+                self.local_temp = sorted(children_distances_list, key=lambda x: x[0])
+                self.temp[:] = []
+                self.temp = circle.initial_population
+                children_shortest_path = []
+                children_shortest_path[:] = []
+                children_shortest_path_cost = min(i[0] for i in self.local_temp)
+                if children_shortest_path_cost < self.best_tour[0][0]:
+                    for i in self.local_temp:
+                        if i[0] == children_shortest_path_cost:
+                            children_shortest_path = (i[1])
+                    self.best_tour[:] = []
+                    self.best_tour.append((children_shortest_path_cost, children_shortest_path))
+                    children_shortest_path_tupples = []
+                    children_shortest_path_tupples[:] = []
+                    for city in children_shortest_path:
+                        children_shortest_path_tupples.append(self.city_coords.get(city))
+                    self.update_visual_current_distance(children_shortest_path_cost)
+                    self.plot_tour(children_shortest_path_tupples)
+                self.update_visual_round(round)
+
+        t = threading.Thread(target=callback)
+        t.start()
 
 
 b = VisualSolve(root)
