@@ -24,7 +24,7 @@ def euclidean_distance(p0, p1):
     """
     xdiff = float(p1[0]) - float(p0[0])
     ydiff = float(p1[1]) - float(p0[1])
-    return int(math.sqrt((xdiff * xdiff + ydiff * ydiff)))
+    return int(math.sqrt((xdiff * xdiff + ydiff * ydiff) + 0.5))
 
 
 class TSPDistance:
