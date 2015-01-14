@@ -281,6 +281,13 @@ class TSPGeneticAlgo(object):
         return in_list
 
     @staticmethod
+    def two_opt_mutation(in_list):
+        a = random.randint(0, len(in_list) - 2)
+        b = a + 1
+        in_list[b], in_list[a] = in_list[a], in_list[b]
+        return in_list
+
+    @staticmethod
     def inversion_mutation(in_list):
         a = random.randint(0, len(in_list) - 1)
         b = random.randint(0, len(in_list) - 1)
@@ -317,7 +324,13 @@ class TSPGeneticAlgo(object):
 
 
 class circleGA(TSPGeneticAlgo):
-    def __init__(self, temp, local_temp, city_tour_init, total_best, city_coords):
+    def __init__(self, temp, local_temp, city_tour_init, total_best, city_coords, pop_size, p):
+        self.prop = p
+        self.rpopsize = pop_size
+        if self.prop == 1:
+            self.mutsize = 1
+        else:
+            self.mutsize = self.rpopsize - self.rpopsize * self.prop
         self.children_dirty = []
         self.groups_of_two = []
         self.population_for_crossover = []
@@ -362,7 +375,7 @@ class circleGA(TSPGeneticAlgo):
         # else:
         self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
-                                       0.9)  # produces population for crossover and mutation
+                                       self.prop)  # produces population for crossover and mutation
         crosscoin = random.randint(0, 4)
         if crosscoin == 0:
             self.children_dirty = self.pmx_crossover(self.population_for_crossover)
@@ -382,32 +395,35 @@ class circleGA(TSPGeneticAlgo):
         self.entire_population[:] = []
         self.entire_population = self.temp + self.local_temp
         self.entire_population = sorted(self.entire_population, key=lambda x: x[0])
-        self.entire_population = self.entire_population[:300]
+        self.entire_population = self.entire_population[:self.rpopsize]
 
 
     def complete_initial_exchanged_population(self):
-        while len(self.selected_for_breeding) < 300:
+        while len(self.selected_for_breeding) < self.rpopsize:
             tour_to_add = random.choice(self.all_fitness_temp)
             if tour_to_add not in self.selected_for_breeding:
                 self.selected_for_breeding.append(tour_to_add)
 
     def complete_population_for_mutation(self):
-        if len(self.population_for_mutation) > 30:
-            while len(self.population_for_mutation) != 30:
+        if len(self.population_for_mutation) > self.mutsize:
+            while len(self.population_for_mutation) != self.mutsize:
                 todel = random.choice(self.population_for_mutation)
                 self.population_for_mutation.remove(todel)
         else:
-            while len(self.population_for_mutation) != 30:
+            while len(self.population_for_mutation) != self.mutsize:
                 toadd = random.choice(self.all_fitness_temp)
-                coin = random.randint(1, 3)
-                if coin == 1:
-                    mutated = self.insertion_mutation(toadd)
-                    self.population_for_mutation.append(mutated)
-                elif coin == 2:
+                coin = random.randint(0, 3)
+                if coin == 0:
                     mutated = self.inversion_mutation(toadd)
                     self.population_for_mutation.append(mutated)
-                else:
+                elif coin == 2:
+                    mutated = self.insertion_mutation(toadd)
+                    self.population_for_mutation.append(mutated)
+                elif coin == 1:
                     mutated = self.reciprocal_exchange_mutation(toadd)
+                    self.population_for_mutation.append(mutated)
+                else:
+                    mutated = self.two_opt_mutation(toadd)
                     self.population_for_mutation.append(mutated)
 
     def normalize_initial_population(self):
@@ -429,6 +445,3 @@ class circleGA(TSPGeneticAlgo):
         self.initial_population[:] = []
         self.initial_population = sorted(self.temp, key=lambda x: x[0])
         return self.initial_population
-
-
-
