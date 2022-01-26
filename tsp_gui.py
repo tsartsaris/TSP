@@ -10,9 +10,9 @@ __maintainer__ = "Tsartsaris Sotiris"
 __email__ = "info@tsartsaris.gr"
 __status__ = "Development"
 
-from Tkinter import *
-import tkFileDialog
-import ttk
+from tkinter import *
+import tkinter.filedialog as tkFileDialog
+import tkinter.ttk as ttk
 import threading
 
 import matplotlib
@@ -23,7 +23,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tsp_parser import *
 from tsp_ga_init_pop import *
 from tsp_ga import *
-
 
 matplotlib.use('TkAgg')
 root = Tk()
@@ -76,7 +75,6 @@ class VisualSolve:
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
 
-
     def add_distance_visual_element(self, master):
         label_distance = ttk.Label(master, text="Current distance:", background='lightgreen',
                                    font=('times', 12, 'bold'))
@@ -84,7 +82,6 @@ class VisualSolve:
         # this get changed from update_current_visual_distance
         self.text_distance = Text(master, width=10, height=1, bg='lightgreen', fg="red", font=('times', 12, 'bold'))
         self.text_distance.grid(row=0, column=3, sticky=(W, N, S, E))
-
 
     def update_round_visual_element(self):
         label_round = ttk.Label(self.frame, text="Current round:", background='lightgreen',
@@ -125,7 +122,7 @@ class VisualSolve:
         """
         filename = tkFileDialog.askopenfilename()
         self.newtsp = TSPParser(filename)
-        print self.newtsp.display_status
+        print(self.newtsp.display_status)
 
         # from this line to the end of else we check if there is an error on the parser
         # if there is an error we display it, else we parse the file normally and we
@@ -214,8 +211,6 @@ class VisualSolve:
         self.canvas.mpl_connect('motion_notify_event', on_move)
         self.canvas.get_tk_widget().grid(row=1, column=1, sticky=W)
         self.canvas.draw()
-        self.canvas.show()
-
 
     def update_visual_current_distance(self, distance):
         """
@@ -250,7 +245,6 @@ class VisualSolve:
         self.plot_tour(shortest_path_tuples)
         button1 = Button(self.frame, text="Create children", pady=3, command=lambda: self.create_offsprings_round_one())
         button1.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
-
 
     def create_init_pop(self, init_dict, init_tour, type):
         """
@@ -310,8 +304,6 @@ class VisualSolve:
                 self.p.set(0.9)
             for i in range(rounds):
                 p = self.p.get()
-                print p
-                print i
                 round = i
                 circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords,
                                   self.round_pop_size, p)
