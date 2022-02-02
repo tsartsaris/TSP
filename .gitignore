@@ -137,10 +137,10 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre a_type checker
 .pyre/
 
-# pytype static type analyzer
+# pytype static a_type analyzer
 .pytype/
 
 # Cython debug symbols

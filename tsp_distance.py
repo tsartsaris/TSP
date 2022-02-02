@@ -12,7 +12,7 @@ __status__ = "Development"
 
 """
     Provided a dictionary with city coordinates and a list
-    of the current tour it calculates the entire tour euclidean_distance
+    of the current tour it calculates the entire tour euclidean distance
 """
 
 import math
@@ -38,8 +38,8 @@ class TSPDistance:
 
     def total_distance(self, cities_best):
         """
-            Iterates a list of coordinate tuples and calculates the Euclidean
-            distance between 2 points found sequential in the list representing
+            Iterates a a_list of coordinate tuples and calculates the Euclidean
+            distance between 2 points found sequential in the a_list representing
             the tour. Then sums everything up and returns the result
         """
         cities_best = self.cities_best

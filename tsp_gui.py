@@ -11,7 +11,7 @@ __email__ = "info@tsartsaris.gr"
 __status__ = "Development"
 
 from tkinter import *
-import tkinter.filedialog as tkFileDialog
+import tkinter.filedialog as tk_file_dialog
 import tkinter.ttk as ttk
 import threading
 
@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from tsp_parser import *
+from tsp_solver import *
 from tsp_ga_init_pop import *
 from tsp_ga import *
 
@@ -30,9 +30,9 @@ root.title("TSP Solver")
 root.geometry("1024x768")
 
 text_cx = Label(root, bg='black', fg="white", width=1, font=('times', 12, 'bold'))
-text_cx.grid(row=6, column=1, sticky=(W, N, S, E))
+text_cx.grid(row=6, column=1)
 text_cy = Label(root, bg='black', fg="white", font=('times', 12, 'bold'))
-text_cy.grid(row=7, column=1, sticky=(W, N, S, E))
+text_cy.grid(row=7, column=1)
 
 
 def on_move(event):
@@ -41,12 +41,18 @@ def on_move(event):
 
     if event.inaxes:
         ax = event.inaxes  # the axes instance
-        text_cx.config(text='data coords X %f' % (round(event.xdata, 1)))
-        text_cy.config(text='data coords Y %f' % (round(event.ydata, 1)))
+        text_cx.config(text='fig coords X %f' % (round(event.xdata, 1)))
+        text_cy.config(text='fig coords Y %f' % (round(event.ydata, 1)))
 
 
-class VisualSolve:
+class VisualSolver:
     def __init__(self, master):
+        self.initial_population_size = None
+        self.crounds = None
+        self.canvas = None
+        self.w = None
+        self.text_round = None
+        self.text_distance = None
         self.temp = []
         self.local_temp = []
         self.best_tour = []
@@ -55,14 +61,14 @@ class VisualSolve:
         self.init_plot(master)
         self.frame = Frame(master)
         self.frame = Frame(width=150, height=500, bg="lightblue", bd=1, relief=SUNKEN)
-        self.frame.grid(row=1, column=2, columnspan=2, rowspan=2, sticky=(E, W, N, S))
+        self.frame.grid(row=1, column=2, columnspan=2, rowspan=2)
         self.button_open_tsp_file = ttk.Button(master, text='Open TSP file', command=self.openfile)
         self.button_open_tsp_file.grid(row=0, column=1, sticky=W)
         self.add_distance_visual_element(master)
 
     def init_plot(self, master):
         """
-            Create an empty initial plot to instantiate the GUI layout
+            Create an empty initial plot to instantiate the GUI plot_column
         """
         b = Figure(figsize=(8, 6), dpi=100)
         ac = b.add_subplot(111)
@@ -78,41 +84,41 @@ class VisualSolve:
     def add_distance_visual_element(self, master):
         label_distance = ttk.Label(master, text="Current distance:", background='lightgreen',
                                    font=('times', 12, 'bold'))
-        label_distance.grid(row=0, column=2, sticky=(W, N, S, E))
+        label_distance.grid(row=0, column=2)
         # this get changed from update_current_visual_distance
         self.text_distance = Text(master, width=10, height=1, bg='lightgreen', fg="red", font=('times', 12, 'bold'))
-        self.text_distance.grid(row=0, column=3, sticky=(W, N, S, E))
+        self.text_distance.grid(row=0, column=3)
 
     def update_round_visual_element(self):
-        label_round = ttk.Label(self.frame, text="Current round:", background='lightgreen',
+        label_round = ttk.Label(self.frame, text="Current round_running:", background='lightgreen',
                                 font=('times', 12, 'bold'))
-        label_round.grid(row=8, column=0, sticky=(W, N, S, E))
+        label_round.grid(row=8, column=0)
         # this get changed from update_current_visual_distance
         self.text_round = Label(self.frame, bg='lightgreen', font=('times', 12, 'bold'))
-        self.text_round.grid(row=8, column=1, sticky=(W, N, S, E))
+        self.text_round.grid(row=8, column=1)
 
-    def update_visual_round(self, round):
+    def update_visual_round(self, round_running):
         """
             Each time we want to update the distance on the GUI
             we call this passing the distance as parameter
         """
-        self.text_round.config(text=round)
+        self.text_round.config(text=round_running)
 
     def create_initial_population_visual_element(self):
         var = StringVar(self.frame)
         var.set("shuffle")  # initial value
         label_distance = ttk.Label(self.frame, text="Select mode:", background='lightgreen', font=('times', 12, 'bold'))
-        label_distance.grid(row=0, column=0, sticky=(W, N, S))
+        label_distance.grid(row=0, column=0)
         option1 = OptionMenu(self.frame, var, "shuffle", "elitism")
-        option1.grid(row=0, column=1, sticky=(W, N, S))
+        option1.grid(row=0, column=1)
         label_population = ttk.Label(self.frame, text="Choose population size", background="lightblue",
                                      font=('times', 12, 'bold'))
-        label_population.grid(row=1, column=0, columnspan=2, sticky=(E, W, N, S))
+        label_population.grid(row=1, column=0, columnspan=2)
         self.w = Scale(self.frame, from_=150, to=1000, resolution=10, orient=HORIZONTAL)
-        self.w.grid(row=2, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.w.grid(row=2, column=0, columnspan=2)
         button = Button(self.frame, text="Create initial population", pady=5,
                         command=lambda: self.create_initial_population_button(var.get()))
-        button.grid(row=3, column=0, columnspan=2, sticky=(E, W, N, S))
+        button.grid(row=3, column=0, columnspan=2)
 
     def openfile(self, frame1=None):
         """
@@ -120,9 +126,8 @@ class VisualSolve:
             it opens the tkinter file dialog , passes the selected file to
             the parser class and process as needed.
         """
-        filename = tkFileDialog.askopenfilename()
+        filename = tk_file_dialog.askopenfilename()
         self.newtsp = TSPParser(filename)
-        print(self.newtsp.display_status)
 
         # from this line to the end of else we check if there is an error on the parser
         # if there is an error we display it, else we parse the file normally and we
@@ -135,7 +140,7 @@ class VisualSolve:
             label_distance1 = ttk.Label(frame1, text="Error:", background='red', font=('times', 12, 'bold'))
             label_distance1.grid(row=0, column=0, sticky=W)
             text_error = Text(frame1, width=90, height=1, bg='black', fg="red", font=('times', 12, 'bold'))
-            text_error.grid(row=0, column=1, sticky=(W, N, S, E))
+            text_error.grid(row=0, column=1)
             text_error.config(state=NORMAL)
             text_error.delete('1.0', '2.0')
             text_error.insert('1.0', self.newtsp.display_status)
@@ -149,7 +154,7 @@ class VisualSolve:
                                         font=('times', 12, 'bold'))
             label_distance1.grid(row=0, column=0, sticky=W)
             text_error = Text(frame1, width=85, height=1, bg='lightgreen', fg="blue", font=('times', 12, 'bold'))
-            text_error.grid(row=0, column=1, sticky=(W, N, S, E))
+            text_error.grid(row=0, column=1)
             text_error.config(state=NORMAL)
             text_error.delete('1.0', '2.0')
             text_error.insert('1.0', self.newtsp.filename)
@@ -165,7 +170,7 @@ class VisualSolve:
 
     def plot_tour(self, tour_tuples):
         """
-            We call this passing the list of tuples with city
+            We call this passing the a_list of tuples with city
             coordinates to plot the tour we want on the GUI
         """
         tour_tuples.append(tour_tuples[0])
@@ -177,8 +182,8 @@ class VisualSolve:
         # self.f, self.a = plt.subplots(1, 1)
         # self.f = Figure(figsize=(8, 6), dpi=100)
         # self.a = self.f.add_subplot(111, navigate=True)
-        self.a.plot(x, y, 'ro')
-        self.a.plot(x, y, 'b-')
+        self.a.plot(x, y, color="blue", marker="x", linestyle="")
+        # self.a.plot(x, y, 'b-')
         # self.a.set_title('Current best tour')
         # self.a.set_xlabel('X axis coordinates')
         # self.a.set_ylabel('Y axis coordinates')
@@ -191,17 +196,18 @@ class VisualSolve:
 
     def plot_points(self, tour_tuples):
         """
-            We call this passing the list of tuples with city
+            We call this passing the a_list of tuples with city
             coordinates to plot the tour we want on the GUI
         """
         data_in_array = np.array(tour_tuples)
         transposed = data_in_array.T
+        print(transposed)
         x, y = transposed
         plt.ion()
         # self.f, self.a = plt.subplots(1, 1)
         self.f = Figure(figsize=(8, 6), dpi=100)
         self.a = self.f.add_subplot(111, navigate=True)
-        self.a.plot(x, y, 'ro')
+        self.a.plot(x, y, color="blue", marker="x", linestyle="")
         # self.a.plot(x, y, 'b-')
         self.a.set_title('Current best tour')
         self.a.set_xlabel('X axis coordinates')
@@ -217,13 +223,15 @@ class VisualSolve:
             Each time we want to update the distance on the GUI
             we call this passing the distance as parameter
         """
+        print(distance)
         self.text_distance.config(state=NORMAL)
         self.text_distance.delete('1.0', '2.0')
         self.text_distance.insert('1.0', distance)
         self.text_distance.config(state=DISABLED)
 
-    def create_initial_population_button(self, type):
-        self.new_pop = self.create_init_pop(self.city_coords, self.init_tour, type)
+    def create_initial_population_button(self, a_type):
+        self.new_pop = self.create_init_pop(self.city_coords, self.init_tour, a_type)
+        print(self.new_pop)
         # after the initial population created we evaluate the distances to see if we have
         # a better solution than the one loaded with the parser
         distances_list = []  # here we will store locally tuples of distance cost and tours
@@ -244,16 +252,16 @@ class VisualSolve:
         self.update_visual_current_distance(shortest_path_distance_cost)
         self.plot_tour(shortest_path_tuples)
         button1 = Button(self.frame, text="Create children", pady=3, command=lambda: self.create_offsprings_round_one())
-        button1.grid(row=4, column=0, columnspan=2, sticky=(E, W, N, S))
+        button1.grid(row=4, column=0, columnspan=2)
 
-    def create_init_pop(self, init_dict, init_tour, type):
+    def create_init_pop(self, init_dict, init_tour, a_type):
         """
             We create the initial population with TSPInitialPopulation class
             we pass the dict with cities and coordinates and the initial tour
         """
         self.initial_population_size = self.w.get()
         new_pop = TSPInitialPopulation(init_dict, init_tour, self.initial_population_size,
-                                       type)  # plus the population initial size (here is 200)
+                                       a_type)  # plus the population initial size (here is 200)
         return new_pop.pop_group
 
     def create_offsprings_round_one(self):
@@ -283,16 +291,16 @@ class VisualSolve:
             self.plot_tour(offspring_shortest_path_tuples)
         label_rounds = ttk.Label(self.frame, text="Choose rounds", background="lightblue",
                                  font=('times', 12, 'bold'))
-        label_rounds.grid(row=5, column=0, columnspan=2, sticky=(E, W, N, S))
+        label_rounds.grid(row=5, column=0, columnspan=2)
         self.crounds = Scale(self.frame, from_=1, to=10000, resolution=100, orient=HORIZONTAL)
-        self.crounds.grid(row=6, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.crounds.grid(row=6, column=0, columnspan=2)
         button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
-        button2.grid(row=12, column=0, columnspan=2, sticky=(E, W, N, S))
+        button2.grid(row=12, column=0, columnspan=2)
         label_p = ttk.Label(self.frame, text="Crossover probability", background="lightblue",
                             font=('times', 12, 'bold'))
-        label_p.grid(row=9, column=0, columnspan=2, sticky=(E, W, N, S))
+        label_p.grid(row=9, column=0, columnspan=2)
         self.p = Scale(self.frame, from_=0.1, to=1, resolution=0.1, orient=HORIZONTAL)
-        self.p.grid(row=10, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.p.grid(row=10, column=0, columnspan=2)
         return self
 
     def start_solving(self):
@@ -304,7 +312,7 @@ class VisualSolve:
                 self.p.set(0.9)
             for i in range(rounds):
                 p = self.p.get()
-                round = i
+                this_round = i
                 circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords,
                                   self.round_pop_size, p)
                 children_distances_list = []
@@ -322,9 +330,9 @@ class VisualSolve:
                 children_shortest_path[:] = []
                 children_shortest_path_cost = min(i[0] for i in self.local_temp)
                 if children_shortest_path_cost < self.best_tour[0][0]:
-                    for i in self.local_temp:
-                        if i[0] == children_shortest_path_cost:
-                            children_shortest_path = (i[1])
+                    for j in self.local_temp:
+                        if j[0] == children_shortest_path_cost:
+                            children_shortest_path = (j[1])
                     self.best_tour[:] = []
                     self.best_tour.append((children_shortest_path_cost, children_shortest_path))
                     children_shortest_path_tupples = []
@@ -333,11 +341,7 @@ class VisualSolve:
                         children_shortest_path_tupples.append(self.city_coords.get(city))
                     self.update_visual_current_distance(children_shortest_path_cost)
                     self.plot_tour(children_shortest_path_tupples)
-                self.update_visual_round(round)
+                self.update_visual_round(this_round)
 
         t = threading.Thread(target=callback)
         t.start()
-
-
-b = VisualSolve(root)
-root.mainloop()

@@ -12,20 +12,36 @@ __status__ = "Development"
 
 """
     With this parser we check for a file if is TSP file
-    and the we input the data for later usage. As an add
+    and the we input the fig for later usage. As an add
     we plot the current instance of tour to have a visual
-    output of the data we have.
+    output of the fig we have.
 """
 
 
-class TSPParser:
+def check_filename_tsp(filename):
+    """
+        Check if the file provided is a valid TSP fig file
+        ...ends with .tsp
+    """
+    if filename.endswith(".tsp"):
+        return True
+    else:
+        return False
+
+
+class TSPParserOLD:
     def __init__(self, filename):
+        self.edge_weight_type = None
+        self.dimension = None
         self.city_coords = {}
         self.city_tour_init = []
         self.city_tour_tuples = []
         self.filename = filename
         self.display_status = ''
-        if self.check_filename(filename):
+        self.parse_file(filename)
+
+    def parse_file(self, filename):
+        if check_filename_tsp(filename):
             content = self.read_filename(filename)
             self.dimension = self.get_dimension(content)
             if self.check_dimension(self.filename, self.dimension):
@@ -33,28 +49,16 @@ class TSPParser:
                 self.city_coords = self.get_city_coord(self.content)
                 self.city_tour_init = self.create_initial_tour()
                 self.city_tour_tuples = self.create_initial_coord_tuples()
-
             else:
                 self.display_status = ('Dimension of the file do not match with the name of the file!\n'
-                                       'Please make sure you have a valid TSP data file.\n'
+                                       'Please make sure you have a valid TSP fig file.\n'
                                        'Please use another file or correct the one you have')
         else:
             self.display_status = 'This is not a valid TSP file, should look like example.tsp.Please use another one!'
 
-    def check_filename(self, filename):
-        """
-            Check if the file provided is a valid TSP data file
-            ...ends with .tsp
-        """
-        if self.filename.endswith(".tsp"):
-            return True
-        else:
-            return False
-
-
     def read_filename(self, filename):
         """
-            Read the TSP file line by line in a list
+            Read the TSP file line by line in a a_list
         """
         with open(self.filename) as f:
             self.content = f.read().splitlines()
@@ -72,7 +76,7 @@ class TSPParser:
 
     def check_dimension(self, filename, dimension):
         """
-            Checks if the dimension found in the TSP data matches
+            Checks if the dimension found in the TSP fig matches
             the name of the file provided. ex. if you provide a file
             named "eil101.tsp" the dimension in the file should be "101"
         """
@@ -118,7 +122,3 @@ class TSPParser:
         for i in city_tour_init:
             self.city_tour_tuples.append(content.get(i))
         return self.city_tour_tuples
-
-
-if __name__ == '__main__':
-    newtsp = TSPParser("TSP_Problems/a280.tsp")

@@ -27,10 +27,11 @@ from tsp_distance import *
 
 class TSPGeneticAlgo(object):
     def __init__(self, initial_population, city_tour_init, total_best):
+        self.sorted_fitness = None
         self.children_dirty = []
         self.groups_of_two = []
         self.selected_for_breeding = []  # here we store the population selected from the tournament selection
-        self.population_for_crossover = []  # based on the probability of crossover a equal random sample appended
+        self.population_for_crossover = []  # based on the probability of crossover an equal random sample appended
         self.population_for_mutation = []  # the remainders from the above go here for mutation operation
         self.all_fitness = []
         self.offsprings = []  # this is where we are going to store all offsprings for later breeding
@@ -61,7 +62,7 @@ class TSPGeneticAlgo(object):
 
     def calculate_fitness(self, in_list):
         """
-            Given a list of distances we apply the fitness function to each
+            Given a a_list of distances we apply the fitness function to each
             one of them
         """
         for city_distance in in_list:
@@ -75,7 +76,7 @@ class TSPGeneticAlgo(object):
             We iterate the selected population and we create groups of 2
             to make the breeding in the next step.
         """
-        if len(in_list)%2 != 0:
+        if len(in_list) % 2 != 0:
             in_list.pop()
         while in_list:
             local = random.sample(in_list, 2)
@@ -85,7 +86,6 @@ class TSPGeneticAlgo(object):
             for dub in local:
                 if dub[0] == best:
                     self.selected_for_breeding.append(dub)
-
 
     def random_pick_doubles(self, in_list):
         """
@@ -102,8 +102,8 @@ class TSPGeneticAlgo(object):
 
     def divide_breeding_mut_cross(self, in_list, percentage_crossover):
         """
-            Based on the percentage crossover we separate the breeding list
-            to a list with chromosomes for crossover and a list with chromosomes
+            Based on the percentage crossover we separate the breeding a_list
+            to a a_list with chromosomes for crossover and a a_list with chromosomes
             for mutation. If the percentage is 0.8 and the breeding population
             is 100 the 80 chromosomes will be selected for crossover and the rest
             20 for mutation.
@@ -115,7 +115,7 @@ class TSPGeneticAlgo(object):
 
     def one_point_crossover(self, in_list):
         """
-            Given the list of chromosomes we first create random pairs of doubles
+            Given the a_list of chromosomes we first create random pairs of doubles
             and the we apply a simple point crossover by choosing a random point in
             the operator is going to take place
         """
@@ -136,7 +136,7 @@ class TSPGeneticAlgo(object):
 
     def pmx_crossover(self, in_list):
         """
-            Given the list of chromosomes we first create random pairs of doubles
+            Given the a_list of chromosomes we first create random pairs of doubles
             and the we apply a simple point crossover by choosing a random point in
             the operator is going to take place
         """
@@ -215,13 +215,13 @@ class TSPGeneticAlgo(object):
                         self.differs.pop()
 
             self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
-                # cleaned from duplicates in the self.offsprings list
+            # cleaned from duplicates in the self.offsprings a_list
             # else:
             # differs = [x for x in self.tour_init if x not in dirty]
             #     uniq = [x for x, y in collections.Counter(dirty).items() if y > 1]
             #
             # self.offsprings.append(dirty)  # at this point we have all the children from the crossover operation
-                # cleaned from duplicates in the self.offsprings list
+            # cleaned from duplicates in the self.offsprings a_list
 
     def find_nn(self, city, list):
         """
@@ -231,20 +231,18 @@ class TSPGeneticAlgo(object):
         return min((euclidean_distance(start_city, self.get_coordinates_from_city(rest)), rest) for rest in
                    list)
 
-
     def get_coordinates_from_city(self, city):
         """
             Given a city return the coordinates (x,y)
         """
         return self.city_coords.get(city)
 
-
     def pick_random_city(self):
         """
             Random pick of a city. Persist of uniqueness each time
-            the city is added to the random city list and removed
+            the city is added to the random city a_list and removed
             from remaining cities. Each time we pick a new one from
-            the eliminated list of remaining cities
+            the eliminated a_list of remaining cities
         """
         if self.random_remaining_cities:
             self.random_city = random.choice(self.random_remaining_cities)
@@ -262,7 +260,6 @@ class TSPGeneticAlgo(object):
             nearest_tour.append(next_city[1])
             prov_list.remove(next_city[1])
         return nearest_tour
-
 
     @staticmethod
     def insertion_mutation(in_list):
@@ -307,7 +304,6 @@ class TSPGeneticAlgo(object):
     def inverse(in_list):
         in_list.reverse()
         return in_list
-
 
     def mutate_elitism(self):
         for tour in self.population_for_mutation:
@@ -361,7 +357,7 @@ class circleGA(TSPGeneticAlgo):
         self.all_fitness_temp[:] = self.all_fitness
         # num = random.randint(1,2)
         # if num == 1:
-        #self.tournament_selection(self.all_fitness)
+        # self.tournament_selection(self.all_fitness)
         # else:
         self.best_selection()
         self.complete_initial_exchanged_population()
@@ -371,7 +367,7 @@ class circleGA(TSPGeneticAlgo):
         self.calculate_fitness(self.initial_population)
         # num = random.randint(1,2)
         # if num == 1:
-        #self.tournament_selection(self.all_fitness)
+        # self.tournament_selection(self.all_fitness)
         # else:
         self.best_selection()
         self.divide_breeding_mut_cross(self.selected_for_breeding,
@@ -388,15 +384,11 @@ class circleGA(TSPGeneticAlgo):
         self.mutate_elitism()
         self.fin()
 
-
-
-
     def add_init_offsprings(self):
         self.entire_population[:] = []
         self.entire_population = self.temp + self.local_temp
         self.entire_population = sorted(self.entire_population, key=lambda x: x[0])
         self.entire_population = self.entire_population[:self.rpopsize]
-
 
     def complete_initial_exchanged_population(self):
         while len(self.selected_for_breeding) < self.rpopsize:

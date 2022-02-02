@@ -11,7 +11,7 @@ __email__ = "info@tsartsaris.gr"
 __status__ = "Development"
 
 """
-    Provided a list representing a tour we create here
+    Provided a a_list representing a tour we create here
     the initial population for the Genetic Algorithm
     to start from. Techniques to create are shuffle and elitism
     with NN (nearest neighbor) techniques
@@ -31,14 +31,13 @@ class TSPInitialPopulation:
         self.elitism_population = 0
         self.shuffle_population = 0
         self.pop_group = []  # this is the entire population produced
-        self.init_type = init_type  # this is the type of initialisation (shuffle or elitism)
+        self.init_type = init_type  # this is the a_type of initialisation (shuffle or elitism)
         self.init_tour = init_tour  # the initial tour provided
         self.cities_dict = cities_dict  # the dictionary with city:coordinates
         self.pop_size = pop_size  # the initial amount of population that will be created
         self.random_remaining_cities = self.init_tour[:]
         self.random_cities = []
         self.create_the_initial_population()
-
 
     def create_the_initial_population(self):
         if self.init_type == "shuffle":
@@ -52,7 +51,6 @@ class TSPInitialPopulation:
                 self.create_nearest_tour(city)
             self.mutate_elitism()
 
-
     def shuffle_list(self, tour_list, pop_size):
         """
             We create a numpy array and we use permutation
@@ -65,14 +63,13 @@ class TSPInitialPopulation:
             if not any((y == x).all() for x in self.pop_group):
                 self.pop_group.append(y.tolist())
 
-    def find_nn(self, city, list):
+    def find_nn(self, city, a_list):
         """
             Given a city we find the next nearest city
         """
         start_city = self.get_coordinates_from_city(city)
         return min((euclidean_distance(start_city, self.get_coordinates_from_city(rest)), rest) for rest in
-                   list)
-
+                   a_list)
 
     def get_coordinates_from_city(self, city):
         """
@@ -80,13 +77,12 @@ class TSPInitialPopulation:
         """
         return self.cities_dict.get(city)
 
-
     def pick_random_city(self):
         """
             Random pick of a city. Persist of uniqueness each time
-            the city is added to the random city list and removed
+            the city is added to the random city a_list and removed
             from remaining cities. Each time we pick a new one from
-            the eliminated list of remaining cities
+            the eliminated a_list of remaining cities
         """
         if self.random_remaining_cities:
             self.random_city = random.choice(self.random_remaining_cities)
@@ -116,23 +112,23 @@ class TSPInitialPopulation:
 
     def mutate_elitism(self):
         for tour in self.elitism_group:
-	        self.pop_group.append(tour)
-	        # if random.getrandbits(1) == 1:
-	        # self.elitism_population_for_mutation.append(tour)
-	        #     else:
-	        #         self.pop_group.append(tour)
-	        #
-	        # for elit_tour in self.elitism_population_for_mutation:
-	        #     coin = random.randint(1, 3)
-	        #     if coin == 1:
-	        #         mutated = self.inversion_mutation(elit_tour)
-	        #         self.pop_group.append(mutated)
-	        #     elif coin == 2:
-	        #         mutated = self.reciprocal_exchange_mutation(elit_tour)
-	        #         self.pop_group.append(mutated)
-	        #     else:
-	        #         mutated = self.insertion_mutation(elit_tour)
-	        #         self.pop_group.append(mutated)
+            self.pop_group.append(tour)
+            # if random.getrandbits(1) == 1:
+            # self.elitism_population_for_mutation.append(tour)
+            #     else:
+            #         self.pop_group.append(tour)
+            #
+            # for elit_tour in self.elitism_population_for_mutation:
+            #     coin = random.randint(1, 3)
+            #     if coin == 1:
+            #         mutated = self.inversion_mutation(elit_tour)
+            #         self.pop_group.append(mutated)
+            #     elif coin == 2:
+            #         mutated = self.reciprocal_exchange_mutation(elit_tour)
+            #         self.pop_group.append(mutated)
+            #     else:
+            #         mutated = self.insertion_mutation(elit_tour)
+            #         self.pop_group.append(mutated)
 
     @staticmethod
     def insertion_mutation(in_list):
