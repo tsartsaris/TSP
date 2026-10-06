@@ -98,7 +98,7 @@ class TSPParser:
     def get_city_coord(self, content):
         """
             Returns the cities with their coordinates in a dict
-            like {'24': ('11020', '13688'), '25': ('8468', '11136'),...
+            like {24: (11020.0, 13688.0), 25: (8468.0, 11136.0),...
         """
         start = self.content.index("NODE_COORD_SECTION")
         end = self.content.index("EOF")
@@ -107,7 +107,7 @@ class TSPParser:
             city, space, coord = line.partition(" ")
             coord = coord.strip()
             x, space, y = coord.partition(" ")
-            self.city_coords[int(city)] = (x.strip(), y.strip())
+            self.city_coords[int(city)] = (float(x), float(y))
         return self.city_coords
 
     def create_initial_tour(self):

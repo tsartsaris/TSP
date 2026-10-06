@@ -310,15 +310,16 @@ class TSPGeneticAlgo(object):
 
     def mutate_elitism(self):
         for tour in self.population_for_mutation:
+            # copy the tour: mutating in place would corrupt the parent still held in the population
             coin = random.randint(1, 3)
             if coin == 1:
-                mutated = self.insertion_mutation(tour[1])
+                mutated = self.insertion_mutation(tour[1][:])
                 self.offsprings.append(mutated)
             elif coin == 2:
-                mutated = self.reciprocal_exchange_mutation(tour[1])
+                mutated = self.reciprocal_exchange_mutation(tour[1][:])
                 self.offsprings.append(mutated)
             else:
-                mutated = self.inversion_mutation(tour[1])
+                mutated = self.inversion_mutation(tour[1][:])
                 self.offsprings.append(mutated)
 
 
@@ -410,7 +411,7 @@ class circleGA(TSPGeneticAlgo):
                 self.population_for_mutation.remove(todel)
         else:
             while len(self.population_for_mutation) != self.mutsize:
-                toadd = random.choice(self.all_fitness_temp)
+                toadd = list(random.choice(self.all_fitness_temp))  # copy: mutations below work in place
                 coin = random.randint(0, 3)
                 if coin == 0:
                     mutated = self.inversion_mutation(toadd)
