@@ -14,8 +14,8 @@ import tempfile
 import unittest
 
 from tsp_distance import euclidean_distance, geo_distance
-from tsp_ga import (GeneticAlgorithm, _pmx_child, insertion_mutation, inversion_mutation,
-                    one_point_crossover, pmx_crossover, repair, swap_mutation)
+from tsp_ga import (CROSSOVERS, GeneticAlgorithm, _ox_child, _pmx_child, insertion_mutation, inversion_mutation,
+                    one_point_crossover, order_crossover, pmx_crossover, repair, swap_mutation)
 from tsp_ga_init_pop import create_initial_population, nearest_neighbour_tour
 from tsp_parser import TSPFileError, TSPProblem, read_tour_file, read_tsp_file
 
@@ -137,6 +137,16 @@ class OperatorTest(unittest.TestCase):
             for child in pmx_crossover(self.random_tour(), self.random_tour()):
                 self.assertTrue(is_valid_tour(child, self.problem))
 
+    def test_ox_example(self):
+        # the example from the order_crossover docstring, segment = positions 3..5
+        child = _ox_child([1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 3, 7, 8, 2, 6, 5, 1, 4], 3, 5)
+        self.assertEqual(child, [7, 8, 2, 4, 5, 6, 1, 9, 3])
+
+    def test_ox_gives_valid_tours_without_repair(self):
+        for _ in range(200):
+            for child in order_crossover(self.random_tour(), self.random_tour()):
+                self.assertTrue(is_valid_tour(child, self.problem))
+
     def test_mutations_give_valid_tours_and_leave_the_parent_alone(self):
         for mutation in (insertion_mutation, swap_mutation, inversion_mutation):
             with self.subTest(mutation=mutation.__name__):
@@ -162,6 +172,36 @@ class GeneticAlgorithmTest(unittest.TestCase):
             previous = ga.best_length
         self.assertTrue(is_valid_tour(ga.best_tour, problem))
         self.assertLess(ga.best_length, start / 2)  # random tours are about 3x the optimum
+
+
+class CrossoverMixTest(unittest.TestCase):
+
+    def setUp(self):
+        random.seed(4)
+        self.problem = load("berlin52")
+        self.tours = create_initial_population(self.problem, 40, "shuffle")
+
+    def test_each_crossover_on_its_own_improves_the_tour(self):
+        for name in CROSSOVERS:
+            with self.subTest(crossover=name):
+                ga = GeneticAlgorithm(self.problem, self.tours, crossover_mix={name: 100})
+                start = ga.best_length
+                for _ in range(100):
+                    ga.step()
+                self.assertTrue(is_valid_tour(ga.best_tour, self.problem))
+                self.assertLess(ga.best_length, start)
+
+    def test_missing_crossovers_get_zero_percent(self):
+        ga = GeneticAlgorithm(self.problem, self.tours, crossover_mix={"ox": 100})
+        self.assertEqual(ga.crossover_mix, {"one-point": 0, "pmx": 0, "ox": 100})
+
+    def test_rejects_a_mix_that_does_not_add_up_to_100(self):
+        with self.assertRaisesRegex(ValueError, "add up to 100"):
+            GeneticAlgorithm(self.problem, self.tours, crossover_mix={"pmx": 50, "ox": 40})
+
+    def test_rejects_an_unknown_crossover(self):
+        with self.assertRaisesRegex(ValueError, "Unknown crossover"):
+            GeneticAlgorithm(self.problem, self.tours, crossover_mix={"cx": 100})
 
 
 if __name__ == "__main__":

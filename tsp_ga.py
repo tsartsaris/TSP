@@ -15,8 +15,8 @@ The length of a tour plays the role of *fitness*: the shorter, the fitter.
 Tours need special operators. A tour is a *permutation*: every city must appear
 exactly once. Cutting two parents and gluing the pieces together (classic
 one-point crossover) usually breaks that rule, so this module shows both ways of
-dealing with it: one-point crossover followed by a *repair* step, and PMX, a
-crossover designed to always produce valid permutations.
+dealing with it: one-point crossover followed by a *repair* step, and two
+crossovers designed to always produce valid permutations, PMX and OX.
 
 Run this file directly to solve a problem without the GUI:
 
@@ -33,7 +33,13 @@ from operator import itemgetter
 
 from tsp_ga_init_pop import nearest_neighbour_tour
 
-PMX_PROBABILITY = 0.2  # chance that a pair of parents is bred with PMX instead of one-point crossover
+# The crossovers a pair of parents can be bred with, and the default share of
+# pairs (in percent) that use each one. See GeneticAlgorithm.crossover_mix.
+CROSSOVER_ONE_POINT = "one-point"
+CROSSOVER_PMX = "pmx"
+CROSSOVER_OX = "ox"
+CROSSOVERS = (CROSSOVER_ONE_POINT, CROSSOVER_PMX, CROSSOVER_OX)
+DEFAULT_CROSSOVER_MIX = {CROSSOVER_ONE_POINT: 80, CROSSOVER_PMX: 20, CROSSOVER_OX: 0}
 
 
 # ---------------------------------------------------------------------------
@@ -133,6 +139,47 @@ def pmx_crossover(parent_a, parent_b):
             _pmx_child(parent_b, parent_a, start, end))
 
 
+def _ox_child(segment_parent, other_parent, start, end):
+    """
+        Build one OX child: keep the segment [start, end] of segment_parent in
+        place, then fill the free positions, starting right after the segment
+        and wrapping around, with the other parent's remaining cities in the
+        order they appear in other_parent (also read from right after the segment).
+    """
+    size = len(segment_parent)
+    child = [None] * size
+    child[start:end + 1] = segment_parent[start:end + 1]
+    segment = set(child[start:end + 1])
+    # other_parent read from just after the segment, wrapping around to the start
+    order = [other_parent[(end + 1 + i) % size] for i in range(size)]
+    remaining = iter(city for city in order if city not in segment)
+    for i in range(size - (end - start + 1)):
+        child[(end + 1 + i) % size] = next(remaining)
+    return child
+
+
+def order_crossover(parent_a, parent_b):
+    """
+        Order Crossover (OX, Davis 1985).
+
+        A random segment is copied from one parent. The other cities keep the
+        *relative order* they have in the other parent, which suits the TSP:
+        what matters in a tour is which city follows which, not absolute positions.
+
+            parent_a  [1 2 3 | 4 5 6 | 7 8 9]
+            parent_b  [9 3 7 | 8 2 6 | 5 1 4]
+            child     [7 8 2 | 4 5 6 | 1 9 3]
+
+        parent_b read from after the segment is 5 1 4 9 3 7 8 2 6. Dropping the
+        segment's cities 4 5 6 leaves 1 9 3 7 8 2. These fill the child starting
+        after the segment (1 9 3) and wrapping around to the front (7 8 2).
+        Every child is a valid tour.
+    """
+    start, end = sorted(random.sample(range(len(parent_a)), 2))
+    return (_ox_child(parent_a, parent_b, start, end),
+            _ox_child(parent_b, parent_a, start, end))
+
+
 # ---------------------------------------------------------------------------
 # Mutation: a small random change to one tour. Each returns a new list and
 # leaves the parent untouched; changing the parent in place would silently
@@ -181,21 +228,52 @@ class GeneticAlgorithm:
         best_length.
     """
 
-    def __init__(self, problem, initial_tours, crossover_probability=0.9):
+    def __init__(self, problem, initial_tours, crossover_probability=0.9, crossover_mix=None):
         """
             initial_tours          the first generation, see tsp_ga_init_pop
             crossover_probability  share of the survivors bred by crossover; the
                                    rest are mutated. 0.9 is a common choice.
+            crossover_mix          percentage of the crossover pairs bred with each
+                                   crossover, e.g. {"one-point": 50, "pmx": 0, "ox": 50};
+                                   DEFAULT_CROSSOVER_MIX when not given
         """
         self.problem = problem
         self.population_size = len(initial_tours)
         self.crossover_probability = crossover_probability
+        self.crossover_mix = crossover_mix or DEFAULT_CROSSOVER_MIX
         self.generation = 0
         # The population is kept as (length, tour) pairs so every tour is
         # measured only once.
         self.population = self._evaluate(initial_tours)
         self.children = []
         self.best_length, self.best_tour = self.population[0]
+
+    @property
+    def crossover_mix(self):
+        return dict(zip(CROSSOVERS, self._crossover_weights))
+
+    @crossover_mix.setter
+    def crossover_mix(self, mix):
+        """Accept percentages that add up to 100; crossovers left out get 0."""
+        unknown = set(mix) - set(CROSSOVERS)
+        if unknown:
+            raise ValueError("Unknown crossover %s, use %s" % (", ".join(sorted(unknown)), ", ".join(CROSSOVERS)))
+        weights = [mix.get(name, 0) for name in CROSSOVERS]
+        if any(weight < 0 for weight in weights) or sum(weights) != 100:
+            raise ValueError("Crossover percentages must not be negative and must add up to 100, got %s" % mix)
+        self._crossover_weights = weights
+
+    def _crossover(self, parent_a, parent_b):
+        """
+            Breed two children, choosing the crossover at random with the
+            crossover_mix percentages as weights.
+        """
+        name = random.choices(CROSSOVERS, weights=self._crossover_weights)[0]
+        if name == CROSSOVER_PMX:
+            return pmx_crossover(parent_a, parent_b)
+        if name == CROSSOVER_OX:
+            return order_crossover(parent_a, parent_b)
+        return [repair(child, self.problem) for child in one_point_crossover(parent_a, parent_b)]
 
     def _evaluate(self, tours):
         """(length, tour) for every tour, shortest first."""
@@ -240,13 +318,11 @@ class GeneticAlgorithm:
         if not mutation_parents:
             mutation_parents = [random.choice(parents)]  # always mutate at least one tour
 
-        # 3. Crossover: pair the parents up (0 with 1, 2 with 3, ...).
+        # 3. Crossover: pair the parents up (0 with 1, 2 with 3, ...), each pair
+        #    bred with a crossover picked according to crossover_mix.
         children = []
         for parent_a, parent_b in zip(crossover_parents[0::2], crossover_parents[1::2]):
-            if random.random() < PMX_PROBABILITY:
-                children.extend(pmx_crossover(parent_a, parent_b))
-            else:
-                children.extend(repair(child, self.problem) for child in one_point_crossover(parent_a, parent_b))
+            children.extend(self._crossover(parent_a, parent_b))
 
         # 4. Mutation: each remaining parent gets one randomly chosen mutation.
         for parent in mutation_parents:
@@ -277,13 +353,28 @@ def _main():
     parser.add_argument("--generations", type=int, default=1000, help="number of generations (default 1000)")
     parser.add_argument("--crossover", type=float, default=0.9, help="crossover probability (default 0.9)")
     parser.add_argument("--init", choices=INIT_MODES, default="elitism", help="initial population (default elitism)")
+    mix_group = parser.add_argument_group(
+        "crossover mix", "Percent of the crossover pairs bred with each crossover, adding up to 100. "
+                         "Once any is given, the others count as 0. Default: %s."
+                         % ", ".join("%s %d" % item for item in DEFAULT_CROSSOVER_MIX.items()))
+    for name in CROSSOVERS:
+        mix_group.add_argument("--" + name, type=int, metavar="PERCENT")
     parser.add_argument("--seed", type=int, help="random seed, to make a run repeatable")
     args = parser.parse_args()
+
+    given = {name: getattr(args, name.replace("-", "_")) for name in CROSSOVERS}
+    if all(percent is None for percent in given.values()):
+        mix = DEFAULT_CROSSOVER_MIX
+    else:
+        mix = {name: percent or 0 for name, percent in given.items()}
+    if sum(mix.values()) != 100:
+        parser.error("the crossover percentages must add up to 100, got %s" % mix)
 
     random.seed(args.seed)
     problem = read_tsp_file(args.tsp_file)
     started = time.time()
-    ga = GeneticAlgorithm(problem, create_initial_population(problem, args.population, args.init), args.crossover)
+    ga = GeneticAlgorithm(problem, create_initial_population(problem, args.population, args.init),
+                          args.crossover, mix)
     print("%s: %d cities, best initial tour %d" % (problem.name, len(problem.cities), ga.best_length))
     for _ in range(args.generations):
         if ga.step():

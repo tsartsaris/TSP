@@ -48,8 +48,10 @@ python tsp_gui.py
 1. **Open TSP file...** and pick a problem from `TSP_Problems/`. `berlin52.tsp` is a good start.
 2. Choose how to create the **initial population** and its size, then
    **Create initial population**.
-3. Choose how many **generations** to run and the **crossover probability**, then **Start**.
-   **Stop** pauses the run. **Start** again continues from where it stopped.
+3. Choose how many **generations** to run, the **crossover probability** and the
+   **crossover mix**, the percentage of pairs bred with each crossover type, then **Start**.
+   The mix must add up to 100. **Stop** pauses the run. **Start** again continues
+   from where it stopped. The crossover settings can also be changed during a run.
 
 When a known optimal tour exists for the problem, the *Results* box shows how far
 the best tour found is from the optimum.
@@ -58,6 +60,7 @@ the best tour found is from the optimum.
 
 ```
 python tsp_ga.py TSP_Problems/berlin52.tsp --generations 2000
+python tsp_ga.py TSP_Problems/berlin52.tsp --one-point 50 --ox 50
 python tsp_ga.py --help
 ```
 
@@ -137,6 +140,26 @@ parent_b  [3 7 | 5 1 6 | 4 2]
 child     [6 7 | 3 4 5 | 1 2]
 ```
 
+**OX (Order Crossover).** It also copies a segment from one parent. The other
+cities are added in the *order* they appear in the other parent, starting after
+the segment and wrapping around to the front. PMX tends to keep cities in the
+same *positions*, while OX keeps which city follows which. For a tour, that order
+is what matters.
+
+```
+parent_a  [1 2 3 | 4 5 6 | 7 8 9]
+parent_b  [9 3 7 | 8 2 6 | 5 1 4]
+child     [7 8 2 | 4 5 6 | 1 9 3]
+```
+
+Here parent_b, read from after the segment, is `5 1 4 9 3 7 8 2 6`. Without the
+segment's cities `4 5 6` that leaves `1 9 3 7 8 2`. These fill the child after the
+segment (`1 9 3`) and then wrap around to the front (`7 8 2`).
+
+**Crossover mix.** Each pair of parents picks one of the three crossovers at
+random, using percentages you choose. The default is one-point 80%, PMX 20% and
+OX 0%. In code it's `GeneticAlgorithm(..., crossover_mix={"one-point": 50, "pmx": 0, "ox": 50})`.
+
 ### 4. Mutation
 
 The survivors that were not used for crossover are copied with one small random change:
@@ -213,9 +236,11 @@ stress test rather than something to solve.
 Good exercises if you are studying the code:
 
 1. Remove the duplicate check in `_select_survivors` and watch berlin52 get stuck.
-2. Change `PMX_PROBABILITY` to 0 or 1. Which crossover works better?
+2. Compare the crossovers: run each one on its own at 100% on bier127 or a280.
+   Then try mixes. Does mixing help?
 3. Add **tournament selection**: pick parents by comparing a few random tours.
-4. Implement **order crossover (OX)**, another classic permutation crossover.
+4. Implement **edge recombination crossover (ERX)**, which builds children from
+   the edges both parents share.
 5. Make the GA a *memetic algorithm*: after mutation, apply 2-opt until no
    reversal shortens the tour. Expect a big jump in quality.
 6. Add the `ATT` or `CEIL_2D` distance types from the TSPLIB documentation.

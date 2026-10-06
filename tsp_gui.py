@@ -29,13 +29,14 @@ matplotlib.use("TkAgg")  # must be chosen before anything else from matplotlib d
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-from tsp_ga import GeneticAlgorithm
+from tsp_ga import CROSSOVER_ONE_POINT, CROSSOVER_OX, CROSSOVER_PMX, DEFAULT_CROSSOVER_MIX, GeneticAlgorithm
 from tsp_ga_init_pop import INIT_MODES, create_initial_population
 from tsp_parser import TSPFileError, read_tour_file, read_tsp_file
 
 PROBLEMS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "TSP_Problems")
 TIME_SLICE_SECONDS = 0.05  # how long to compute before letting Tkinter redraw the window
 REDRAW_SECONDS = 0.5       # redraw the plot at most this often; drawing is slower than a generation
+CROSSOVER_LABELS = {CROSSOVER_ONE_POINT: "One-point + repair", CROSSOVER_PMX: "PMX", CROSSOVER_OX: "OX"}
 
 
 class TSPSolverApp:
@@ -103,18 +104,58 @@ class TSPSolverApp:
         self.crossover = tk.Scale(panel, from_=0.1, to=1.0, resolution=0.1, orient=tk.HORIZONTAL)
         self.crossover.set(0.9)
         self.crossover.grid(row=11, column=0, columnspan=2, sticky="ew")
+        self._build_crossover_mix(panel, row=12)
         self.start_button = ttk.Button(panel, text="Start", command=self.start, state=tk.DISABLED)
-        self.start_button.grid(row=12, column=0, sticky="ew", pady=4)
+        self.start_button.grid(row=13, column=0, sticky="ew", pady=4)
         self.stop_button = ttk.Button(panel, text="Stop", command=self.stop, state=tk.DISABLED)
-        self.stop_button.grid(row=12, column=1, sticky="ew", pady=4)
+        self.stop_button.grid(row=13, column=1, sticky="ew", pady=4)
 
         # Results
-        ttk.Label(panel, text="Results", font=bold).grid(row=13, column=0, columnspan=2, sticky="w", pady=(12, 0))
+        ttk.Label(panel, text="Results", font=bold).grid(row=14, column=0, columnspan=2, sticky="w", pady=(12, 0))
         self.result_labels = {}
-        for row, name in enumerate(("Generation", "Best distance", "Optimal distance", "Gap to optimal"), start=14):
+        for row, name in enumerate(("Generation", "Best distance", "Optimal distance", "Gap to optimal"), start=15):
             ttk.Label(panel, text=name).grid(row=row, column=0, sticky="w")
             self.result_labels[name] = ttk.Label(panel, text="-", font=bold)
             self.result_labels[name].grid(row=row, column=1, sticky="e")
+
+    def _build_crossover_mix(self, panel, row):
+        """
+            One percentage box per crossover: the share of crossover pairs bred
+            with it. The percentages must add up to 100 before Start is enabled.
+        """
+        frame = ttk.Frame(panel)
+        frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(4, 0))
+        frame.columnconfigure(0, weight=1)
+        ttk.Label(frame, text="Crossover mix (%)").grid(row=0, column=0, columnspan=2, sticky="w")
+        self.mix_values = {}
+        for line, (name, label) in enumerate(CROSSOVER_LABELS.items(), start=1):
+            ttk.Label(frame, text=label).grid(row=line, column=0, sticky="w", padx=(8, 0))
+            value = tk.StringVar(value=str(DEFAULT_CROSSOVER_MIX[name]))
+            value.trace_add("write", lambda *_: self._update_start_button())
+            ttk.Spinbox(frame, from_=0, to=100, increment=10, width=5, textvariable=value).grid(row=line, column=1, sticky="e")
+            self.mix_values[name] = value
+        self.mix_total = ttk.Label(frame, text="")
+        self.mix_total.grid(row=len(CROSSOVER_LABELS) + 1, column=0, columnspan=2, sticky="e")
+        self._crossover_mix()  # show the starting total
+
+    def _crossover_mix(self):
+        """The crossover percentages typed in, or None if they aren't whole numbers adding up to 100."""
+        try:
+            mix = {name: int(value.get()) for name, value in self.mix_values.items()}
+        except ValueError:
+            self.mix_total.config(text="Whole numbers only", foreground="red")
+            return None
+        total = sum(mix.values())
+        if total != 100 or min(mix.values()) < 0:
+            self.mix_total.config(text="Total %d%%, must be 100%%" % total, foreground="red")
+            return None
+        self.mix_total.config(text="Total 100%", foreground="")
+        return mix
+
+    def _update_start_button(self):
+        """Start is possible with a population, a valid crossover mix and no run in progress."""
+        ready = self.ga is not None and not self.running and self._crossover_mix() is not None
+        self.start_button.config(state=tk.NORMAL if ready else tk.DISABLED)
 
     # ------------------------------------------------------------------
     # Drawing
@@ -189,7 +230,7 @@ class TSPSolverApp:
             self.result_labels["Optimal distance"].config(text=str(self.optimal_length))
         self._draw(None, "%s: %d cities" % (problem.name, len(problem.cities)))
         self.create_button.config(state=tk.NORMAL)
-        self.start_button.config(state=tk.DISABLED)
+        self._update_start_button()
 
     def create_population(self):
         self.stop()
@@ -197,7 +238,7 @@ class TSPSolverApp:
         self.ga = GeneticAlgorithm(self.problem, tours, self.crossover.get())
         self._show_results()
         self._draw_best()
-        self.start_button.config(state=tk.NORMAL)
+        self._update_start_button()
 
     def start(self):
         """Run the chosen number of generations, continuing from where the last run stopped."""
@@ -216,8 +257,7 @@ class TSPSolverApp:
         self.stop_button.config(state=tk.DISABLED)
         if self.problem is not None:
             self.create_button.config(state=tk.NORMAL)
-        if self.ga is not None:
-            self.start_button.config(state=tk.NORMAL)
+        self._update_start_button()
 
     def _run_time_slice(self):
         """
@@ -227,7 +267,11 @@ class TSPSolverApp:
         """
         if not self.running:
             return
-        self.ga.crossover_probability = self.crossover.get()  # the slider can be moved during a run
+        # the settings can be changed during a run; a mix that doesn't add up to 100 is ignored
+        self.ga.crossover_probability = self.crossover.get()
+        mix = self._crossover_mix()
+        if mix is not None:
+            self.ga.crossover_mix = mix
         deadline = time.perf_counter() + TIME_SLICE_SECONDS
         while time.perf_counter() < deadline and self.ga.generation < self.last_generation:
             if self.ga.step():
