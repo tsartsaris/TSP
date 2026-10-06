@@ -35,11 +35,12 @@ from tsp_ga_init_pop import nearest_neighbour_tour
 
 # The crossovers a pair of parents can be bred with, and the default share of
 # pairs (in percent) that use each one. See GeneticAlgorithm.crossover_mix.
+# Half one-point, half OX was the best mix in docs/compare_crossovers.py.
 CROSSOVER_ONE_POINT = "one-point"
 CROSSOVER_PMX = "pmx"
 CROSSOVER_OX = "ox"
 CROSSOVERS = (CROSSOVER_ONE_POINT, CROSSOVER_PMX, CROSSOVER_OX)
-DEFAULT_CROSSOVER_MIX = {CROSSOVER_ONE_POINT: 80, CROSSOVER_PMX: 20, CROSSOVER_OX: 0}
+DEFAULT_CROSSOVER_MIX = {CROSSOVER_ONE_POINT: 50, CROSSOVER_PMX: 0, CROSSOVER_OX: 50}
 
 
 # ---------------------------------------------------------------------------

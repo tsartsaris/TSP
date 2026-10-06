@@ -45,16 +45,22 @@ python tsp_gui.py
 
 ![The TSP Solver window after 6000 generations on a280](docs/images/gui.png)
 
+<img src="docs/images/controls.png" alt="The control panel" align="right" width="260">
+
 1. **Open TSP file...** and pick a problem from `TSP_Problems/`. `berlin52.tsp` is a good start.
 2. Choose how to create the **initial population** and its size, then
    **Create initial population**.
-3. Choose how many **generations** to run, the **crossover probability** and the
-   **crossover mix**, the percentage of pairs bred with each crossover type, then **Start**.
-   The mix must add up to 100. **Stop** pauses the run. **Start** again continues
-   from where it stopped. The crossover settings can also be changed during a run.
+3. Choose how many **generations** to run and the **crossover probability**.
+4. Set the **crossover mix**: the percentage of parent pairs bred with each
+   crossover type. The total must be 100 before **Start** is enabled.
+5. **Start**. **Stop** pauses the run, and **Start** again continues from where
+   it stopped. The crossover probability and mix can also be changed during a run.
 
-When a known optimal tour exists for the problem, the *Results* box shows how far
-the best tour found is from the optimum.
+The *Results* box shows the generation and the best distance. When a known
+optimal tour exists for the problem, it also shows how far the best tour is
+from the optimum.
+
+<br clear="right">
 
 **Command line**, without the GUI:
 
@@ -157,8 +163,9 @@ segment's cities `4 5 6` that leaves `1 9 3 7 8 2`. These fill the child after t
 segment (`1 9 3`) and then wrap around to the front (`7 8 2`).
 
 **Crossover mix.** Each pair of parents picks one of the three crossovers at
-random, using percentages you choose. The default is one-point 80%, PMX 20% and
-OX 0%. In code it's `GeneticAlgorithm(..., crossover_mix={"one-point": 50, "pmx": 0, "ox": 50})`.
+random, using percentages you choose. The default is one-point 50% and OX 50%,
+the best mix in the comparison under [Results](#comparing-the-crossovers).
+In code it's `GeneticAlgorithm(..., crossover_mix={"one-point": 50, "pmx": 0, "ox": 50})`.
 
 ### 4. Mutation
 
@@ -190,6 +197,33 @@ GA run:
 ![Best tour length per generation for both initial population modes](docs/images/convergence.png)
 
 To recreate the figures, run `python docs/make_figures.py`.
+
+### Comparing the crossovers
+
+Each crossover mix ran for 10 seconds, 3 times with different random seeds,
+starting from the same elitism population of 100. The numbers are the average
+gap between the best tour found and the optimum, so lower is better:
+
+| Crossover mix         | berlin52 | bier127 | a280  |
+|-----------------------|---------:|--------:|------:|
+| one-point 100%        |     0.8% |    4.7% | 12.6% |
+| PMX 100%              |     0.0% |    4.3% | 11.1% |
+| OX 100%               |     0.0% |    3.7% | 10.9% |
+| one-point/PMX 80/20   |     0.0% |    3.6% | 11.9% |
+| **one-point/OX 50/50** | **0.0%** | **2.4%** | **9.8%** |
+| equal 34/33/33        |     0.0% |    3.4% |  9.9% |
+
+* **berlin52** is too easy to tell them apart: almost every run finds the optimum.
+* **OX** is the best crossover on its own and one-point the worst. OX keeps which
+  city follows which, and for a tour that order is what matters.
+* **The best mixes** beat every single crossover. One-point/OX 50/50 was the best
+  of all, so it is the default. A likely reason: one-point with repair brings in short
+  nearest neighbour fragments, while OX passes on the parents' order, and the two
+  complement each other.
+
+Three runs per mix shows the trend, but small differences such as 9.8% against
+9.9% could be chance. To run the comparison yourself, which takes about 9 minutes,
+use `python docs/compare_crossovers.py`.
 
 ## Distances
 
@@ -230,14 +264,16 @@ stress test rather than something to solve.
 | [`tsp_gui.py`](tsp_gui.py)                 | the Tkinter GUI                                           |
 | [`tests/`](tests)                          | unit tests                                                |
 | [`docs/make_figures.py`](docs/make_figures.py) | recreates the README figures                          |
+| [`docs/compare_crossovers.py`](docs/compare_crossovers.py) | the crossover comparison table            |
 
 ## Ideas to try
 
 Good exercises if you are studying the code:
 
 1. Remove the duplicate check in `_select_survivors` and watch berlin52 get stuck.
-2. Compare the crossovers: run each one on its own at 100% on bier127 or a280.
-   Then try mixes. Does mixing help?
+2. Repeat the [crossover comparison](#comparing-the-crossovers) with more and
+   longer runs (`python docs/compare_crossovers.py --runs 10 --seconds 30`).
+   Do the conclusions hold? Find a better mix.
 3. Add **tournament selection**: pick parents by comparing a few random tours.
 4. Implement **edge recombination crossover (ERX)**, which builds children from
    the edges both parents share.
