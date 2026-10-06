@@ -49,6 +49,7 @@ class VisualSolve:
     def __init__(self, master):
         self.temp = []
         self.local_temp = []
+        self.stop_event = threading.Event()  # set by the Stop button to end the current run
         self.best_tour = []
         self.master = master
         self.newtsp = []
@@ -286,8 +287,11 @@ class VisualSolve:
         label_rounds.grid(row=5, column=0, columnspan=2, sticky=(E, W, N, S))
         self.crounds = Scale(self.frame, from_=1, to=10000, resolution=100, orient=HORIZONTAL)
         self.crounds.grid(row=6, column=0, columnspan=2, sticky=(E, W, N, S))
-        button2 = Button(self.frame, text="Start genetic algorithm", pady=3, command=lambda: self.start_solving())
-        button2.grid(row=12, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.button_start = Button(self.frame, text="Start genetic algorithm", pady=3,
+                                   command=lambda: self.start_solving())
+        self.button_start.grid(row=12, column=0, columnspan=2, sticky=(E, W, N, S))
+        self.button_stop = Button(self.frame, text="Stop", pady=3, state=DISABLED, command=self.stop_solving)
+        self.button_stop.grid(row=13, column=0, columnspan=2, sticky=(E, W, N, S))
         label_p = ttk.Label(self.frame, text="Crossover probability", background="lightblue",
                             font=('times', 12, 'bold'))
         label_p.grid(row=9, column=0, columnspan=2, sticky=(E, W, N, S))
@@ -295,7 +299,19 @@ class VisualSolve:
         self.p.grid(row=10, column=0, columnspan=2, sticky=(E, W, N, S))
         return self
 
+    def stop_solving(self):
+        """
+            Ask the running genetic algorithm to stop after the current round.
+            The best tour found so far stays on the plot.
+        """
+        self.stop_event.set()
+        self.button_stop.config(state=DISABLED)
+
     def start_solving(self):
+        self.stop_event.clear()
+        self.button_start.config(state=DISABLED)
+        self.button_stop.config(state=NORMAL)
+
         def callback():
             self.round_pop_size = self.initial_population_size - 100
             rounds = self.crounds.get()
@@ -303,6 +319,8 @@ class VisualSolve:
             if self.p.get() == 0.1:
                 self.p.set(0.9)
             for i in range(rounds):
+                if self.stop_event.is_set():
+                    break
                 p = self.p.get()
                 round = i
                 circle = circleGA(self.temp, self.local_temp, self.init_tour, self.best_tour[0], self.city_coords,
@@ -334,8 +352,11 @@ class VisualSolve:
                     self.update_visual_current_distance(children_shortest_path_cost)
                     self.plot_tour(children_shortest_path_tupples)
                 self.update_visual_round(round)
+            self.button_start.config(state=NORMAL)
+            self.button_stop.config(state=DISABLED)
 
-        t = threading.Thread(target=callback)
+        # daemon so closing the window ends the process even while a run is in progress
+        t = threading.Thread(target=callback, daemon=True)
         t.start()
 
 
