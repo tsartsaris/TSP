@@ -24,7 +24,7 @@ def euclidean_distance(p0, p1):
     """
     xdiff = float(p1[0]) - float(p0[0])
     ydiff = float(p1[1]) - float(p0[1])
-    return int(math.sqrt((xdiff * xdiff + ydiff * ydiff) + 0.5))
+    return int(math.sqrt(xdiff * xdiff + ydiff * ydiff) + 0.5)
 
 
 class TSPDistance:
@@ -43,4 +43,6 @@ class TSPDistance:
             the tour. Then sums everything up and returns the result
         """
         cities_best = self.cities_best
+        if cities_best and cities_best[0] != cities_best[-1]:
+            cities_best = cities_best + [cities_best[0]]  # a tour returns to its starting city
         return sum(euclidean_distance(v, w) for v, w in zip(cities_best[:-1], cities_best[1:]))

@@ -17,6 +17,9 @@ __status__ = "Development"
     output of the data we have.
 """
 
+import os
+import re
+
 
 class TSPParser:
     def __init__(self, filename):
@@ -78,7 +81,7 @@ class TSPParser:
         """
         self.dimension = dimension
         self.filename = filename
-        if self.dimension in self.filename:
+        if self.dimension in re.findall(r'\d+', os.path.basename(self.filename)):
             return True
         else:
             return False

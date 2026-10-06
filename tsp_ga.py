@@ -295,8 +295,7 @@ class TSPGeneticAlgo(object):
             a = a
             b = b
         elif a > b:
-            a = b
-            b = a
+            a, b = b, a
         else:
             pass
         first, second, third = in_list[:a], in_list[a:b], in_list[b:]
@@ -330,7 +329,7 @@ class circleGA(TSPGeneticAlgo):
         if self.prop == 1:
             self.mutsize = 1
         else:
-            self.mutsize = self.rpopsize - self.rpopsize * self.prop
+            self.mutsize = int(round(self.rpopsize - self.rpopsize * self.prop))
         self.children_dirty = []
         self.groups_of_two = []
         self.population_for_crossover = []

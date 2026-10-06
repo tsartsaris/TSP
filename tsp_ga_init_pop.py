@@ -111,8 +111,8 @@ class TSPInitialPopulation:
             self.elitism_population = tour_population
             self.shuffle_population = self.pop_size - self.elitism_population
         else:
-            self.elitism_population = self.pop_size / 2
-            self.shuffle_population = self.pop_size / 2
+            self.elitism_population = self.pop_size // 2
+            self.shuffle_population = self.pop_size - self.elitism_population
 
     def mutate_elitism(self):
         for tour in self.elitism_group:
@@ -137,8 +137,8 @@ class TSPInitialPopulation:
     @staticmethod
     def insertion_mutation(in_list):
         tour_range = len(in_list)
-        randomip = random.randint(0, tour_range)
-        city_to_insert = in_list.pop()
+        randomip = random.randint(0, tour_range - 1)
+        city_to_insert = in_list.pop(random.randint(0, tour_range - 1))
         in_list.insert(randomip, city_to_insert)
         return in_list
 
@@ -157,8 +157,7 @@ class TSPInitialPopulation:
             a = a
             b = b
         elif a > b:
-            a = b
-            b = a
+            a, b = b, a
         else:
             pass
         first, second, third = in_list[:a], in_list[a:b], in_list[b:]

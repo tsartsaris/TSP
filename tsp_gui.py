@@ -16,6 +16,7 @@ import tkinter.ttk as ttk
 import threading
 
 import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -24,7 +25,6 @@ from tsp_parser import *
 from tsp_ga_init_pop import *
 from tsp_ga import *
 
-matplotlib.use('TkAgg')
 root = Tk()
 root.title("TSP Solver")
 root.geometry("1024x768")
